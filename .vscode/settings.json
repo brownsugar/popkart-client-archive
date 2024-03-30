@@ -1,0 +1,7 @@
+{
+  "[javascript][typescript]": {
+    "editor.codeActionsOnSave": [
+      "source.fixAll.eslint",
+    ]
+  }
+}
