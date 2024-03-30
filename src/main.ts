@@ -1,5 +1,5 @@
 import { resolve } from 'node:path'
-import { rm } from 'node:fs/promises'
+import { rm, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { promisify } from 'node:util'
 import { exec } from 'node:child_process'
@@ -19,6 +19,7 @@ import {
 } from './lib/utils'
 import packageJson from '../package.json'
 import server from '../server.json'
+import meta from '../meta.json'
 
 const run = async () => {
   try {
@@ -28,6 +29,13 @@ const run = async () => {
     const socket = new KartPatchSocket()
     const patchInfo = await socket.connect(server.host, server.port)
     consola.success('Patch info loaded.\n', patchInfo)
+
+    consola.start('Checking version...')
+    if (meta.version && meta.version >= patchInfo.version) {
+      consola.success(`Client is up-to-date, nothing to do. Current version: ${meta.version}.`)
+      return
+    }
+    consola.success(`New version found, previous version: ${meta.version}, latest version: ${patchInfo.version}.`)
 
     consola.start('Loading client files...')
     const remoteBaseUrl = resolveUrl(patchInfo.version.toString(), patchInfo.endpoint)
@@ -127,6 +135,16 @@ const run = async () => {
     if (stderr)
       throw new Error(stderr)
     consola.success('Client files archived.')
+
+    consola.start('Updating meta file...')
+    meta.id = patchInfo.id
+    meta.version = patchInfo.version
+    meta.timestamp = Date.now()
+    const metaPath = resolve(rootDir, 'meta.json')
+    await writeFile(metaPath, JSON.stringify(meta, null, 2), {
+      flag: 'w',
+    })
+    consola.success('Meta file updated.')
   } catch (e) {
     consola.fatal('An error occurred.', e)
   }
