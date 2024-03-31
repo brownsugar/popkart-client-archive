@@ -206,6 +206,6 @@ export class KartNfo2 {
           }) as ConstructorParameters<typeof PatchFile>
         return new PatchFile(...info)
       })
-      .slice(0, 20) // FOR DEBUGGING ONLY
+      // .slice(0, 20) // FOR DEBUGGING ONLY
   }
 }

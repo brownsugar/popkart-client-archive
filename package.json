@@ -1,10 +1,11 @@
 {
   "name": "popkart-client-archive",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "A PopKart client archiver.",
   "scripts": {
     "start": "ts-node src/main.ts",
-    "lint": "eslint . --ext .ts"
+    "lint": "eslint . --ext .ts",
+    "postversion": "git push && git push --tags"
   },
   "repository": {
     "type": "git",
