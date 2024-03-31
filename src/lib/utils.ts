@@ -1,7 +1,7 @@
 import { dirname } from 'node:path'
 import { mkdir, rm } from 'node:fs/promises'
 import { createReadStream, createWriteStream } from 'node:fs'
-import { createGunzip } from 'zlib'
+import { createGunzip } from 'node:zlib'
 
 export const resolveUrl = (input: string, base: string) => {
   return input

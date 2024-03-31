@@ -1,12 +1,10 @@
 import { resolve } from 'node:path'
 import { rm, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
-import { promisify } from 'node:util'
-import { exec } from 'node:child_process'
 import { consola } from 'consola'
 import EasyDl from 'easydl'
 import { move } from 'fs-extra'
-import { path7za } from '7zip-bin'
+import { Zip } from 'zip-lib'
 import KartPatchSocket from './lib/kart-patch-socket'
 import { KartNfo2, LocalFile } from './lib/kart-files'
 import {
@@ -20,8 +18,10 @@ import {
 import packageJson from '../package.json'
 import server from '../server.json'
 import meta from '../meta.json'
+import type { PatchFile } from './lib/kart-files'
 
 const run = async () => {
+  const t0 = performance.now()
   try {
     consola.box(`PopKart Client archiver v${packageJson.version}`)
 
@@ -52,16 +52,18 @@ const run = async () => {
     const clientFileCount = clientFiles.length
     consola.success(`Client files loaded. (${clientFileCount} files)`)
 
+    const eachClientFiles = async (cb: (i: number, localFile: LocalFile, patchFile: PatchFile) => Promise<void>) => {
+      for (const _i in clientFiles) {
+        const i = Number(_i)
+        const { localFile, patchFile } = clientFiles[i]
+        await cb(i, localFile, patchFile)
+      }
+    }
+
     consola.start('Downloading client files...')
     await emptyDirectory(tempDir)
-    for (const _i in clientFiles) {
-      const i = Number(_i)
-      const { localFile, patchFile } = clientFiles[i]
-
-      const log = (percentage = '0') =>
-        consola.log(`Downloading file ${i + 1} of ${clientFileCount}: ${patchFile.path}...${percentage}%`)
-      log()
-
+    await eachClientFiles(async (i, localFile, patchFile) => {
+      consola.log(`Downloading file ${i + 1} of ${clientFileCount}: ${patchFile.path}...`)
       const localPath = localFile.getDownloadPath()
       await createDirectory(localPath)
 
@@ -73,19 +75,13 @@ const run = async () => {
           maxRetry: 5,
         }
       )
-        .on('progress', ({ total }) => {
-          clearStdoutLastLine()
-          log(total.percentage.toFixed(1))
-        })
       await downloader.wait()
       clearStdoutLastLine()
-    }
+    })
     consola.success(`Client files downloaded.`)
 
     consola.start('Extracing client files...')
-    for (const _i in clientFiles) {
-      const i = Number(_i)
-      const { localFile, patchFile } = clientFiles[i]
+    await eachClientFiles(async (i, localFile, patchFile) => {
       consola.log(`Extracing file ${i + 1} of ${clientFileCount}: ${patchFile.path}...`)
 
       const path = localFile.getDownloadPath()
@@ -96,14 +92,12 @@ const run = async () => {
         overwrite: true,
       })
       clearStdoutLastLine()
-    }
+    })
     await emptyDirectory(tempDir)
     consola.success('Client files extracted.')
 
     consola.start('Validating client files...')
-    for (const _i in clientFiles) {
-      const i = Number(_i)
-      const { localFile, patchFile } = clientFiles[i]
+    await eachClientFiles(async (i, localFile, patchFile) => {
       consola.log(`Validating file ${i + 1} of ${clientFileCount}: ${patchFile.path}...`)
 
       if (!existsSync(localFile.path))
@@ -120,20 +114,44 @@ const run = async () => {
         mtime: filetimeToUnix(patchFile.dwHighDateTime, patchFile.dwLowDateTime),
       })
       clearStdoutLastLine()
-    }
+    })
     consola.success('Client files validated.')
 
     consola.start('Archiving client files...')
-    const run = promisify(exec)
-    const zipName = `PopKart_Client_P${patchInfo.version}.zip`
+    interface ChunkFile {
+      srcPath: string
+      filePath: string
+    }
+    const zipChunks: ChunkFile[][] = []
+    const zipChunkSize = 2 * 1024 * 1024 * 1024 // 2GB
+    let zipChunkFiles: ChunkFile[] = []
+    let zipSize = 0
+    await eachClientFiles(async (i, localFile, patchFile) => {
+      zipChunkFiles.push({
+        srcPath: localFile.path,
+        filePath: patchFile.path,
+      })
+      zipSize += patchFile.size
+      if (zipSize >= zipChunkSize || i === clientFileCount - 1) {
+        zipChunks.push(zipChunkFiles)
+        zipSize = 0
+        zipChunkFiles = []
+      }
+    })
     const archivesPath = resolve(rootDir, 'archives')
-    const destPath = resolve(archivesPath, zipName)
-    const filesPath = resolve(baseDir, '*')
     await emptyDirectory(archivesPath)
-    const { stdout, stderr } = await run(`${path7za} a -tzip -mx=5 -v2g ${destPath} ${filesPath}`)
-    consola.log(stdout)
-    if (stderr)
-      throw new Error(stderr)
+    for (const _i in zipChunks) {
+      const i = Number(_i)
+      const files = zipChunks[i]
+      const zipName = `PopKart_Client_P${patchInfo.version}_${(i + 1).toString().padStart(2, '0')}.zip`
+      const destPath = resolve(archivesPath, zipName)
+      consola.log(`Archiving chunk ${i + 1} of ${zipChunks.length}: ${destPath}`)
+      const zip = new Zip()
+      files.forEach(file => {
+        zip.addFile(file.srcPath, file.filePath)
+      })
+      await zip.archive(destPath)
+    }
     consola.success('Client files archived.')
 
     consola.start('Updating meta file...')
@@ -147,6 +165,9 @@ const run = async () => {
     consola.success('Meta file updated.')
   } catch (e) {
     consola.fatal('An error occurred.', e)
+  } finally {
+    const t1 = performance.now()
+    consola.success(`Done in ${((t1 - t0) / 1000).toFixed(2)}s.`)
   }
 }
 run()
