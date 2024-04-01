@@ -4,7 +4,7 @@ on:
     tags:
       - 'v*'
   schedule:
-    - cron: '0 6,20 * * 1,2,3,4,5'
+    - cron: '0 4,14 * * 1,2,3,4,5' # 12PM, 10PM CST
   workflow_dispatch:
 jobs:
   release:
