@@ -2,6 +2,10 @@
 
 A PopKart (Chinese KartRider) client archive.
 
+## Status
+
+[![Client archiving](https://github.com/brownsugar/popkart-client-archive/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/brownsugar/popkart-client-archive/actions/workflows/main.yml)
+
 ## Introduction
 
 ### Update frequency
