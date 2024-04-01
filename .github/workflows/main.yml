@@ -31,7 +31,7 @@ jobs:
         path: client
         key: client
     - name: Start client archiving
-      run: pnpm start
+      run: pnpm start --client-archive-url=${{ secrets.CLIENT_ARCHIVE_URL }}
     - name: Save client files to cache
       uses: actions/cache/save@v4
       with:

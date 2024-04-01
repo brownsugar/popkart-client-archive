@@ -132,3 +132,4 @@ dist
 # Client files
 client
 archives
+*.zip

@@ -4,10 +4,11 @@ import { existsSync } from 'node:fs'
 import { consola } from 'consola'
 import EasyDl from 'easydl'
 import { move } from 'fs-extra'
-import { Zip } from 'zip-lib'
+import { extract, Zip } from 'zip-lib'
 import KartPatchSocket from './lib/kart-patch-socket'
 import { KartNfo2, LocalFile } from './lib/kart-files'
 import {
+  getArgs,
   removeDirectory,
   createDirectory,
   resolveUrl,
@@ -46,14 +47,15 @@ const run = async () => {
     const nfo2 = new KartNfo2(remoteBaseUrl)
     consola.log('NFO2 URL:', nfo2.url)
     const rootDir = process.cwd()
-    const baseDir = resolve(rootDir, 'client')
-    const tempDir = resolve(baseDir, 'temp')
+    const clientDir = resolve(rootDir, 'client')
+    const tempDir = resolve(clientDir, 'temp')
     const clientFiles = (await nfo2.load())
       .map(patchFile => ({
-        localFile: new LocalFile(baseDir, patchFile.path, tempDir),
+        localFile: new LocalFile(clientDir, patchFile.path, tempDir),
         patchFile,
       }))
-    consola.success(`Client files loaded. (${clientFiles.length} files)`)
+    const clientFileCount = clientFiles.length
+    consola.success(`Client files loaded. (${clientFileCount} files)`)
 
     consola.start('Filtering client files...')
     const downloadFiles: typeof clientFiles = []
@@ -66,7 +68,29 @@ const run = async () => {
     const downloadFileCount = downloadFiles.length
     consola.success(`Client files filtered. (${downloadFileCount} files to download)`)
 
-    if (downloadFileCount === 0) {
+    if (downloadFileCount === clientFileCount) {
+      consola.info('No client cache found, downloading full client...')
+      const args = getArgs()
+      const clientArchiveUrl = args['client-archive-url']
+      if (!clientArchiveUrl)
+        throw new Error('Client archive URL not provided.')
+      const clientArchivePath = resolve(rootDir, 'PopKart_Client.zip')
+      const downloader = new EasyDl(
+        clientArchiveUrl,
+        clientArchivePath,
+        {
+          existBehavior: 'overwrite',
+        }
+      )
+      await downloader.wait()
+      consola.success('Full client downloaded.')
+
+      consola.info('Extracing full client...')
+      await extract(clientArchivePath, clientDir)
+      consola.success('Full client extracted. The archiver will be re-run.')
+      run()
+      return
+    } else if (downloadFileCount === 0) {
       consola.info('Nothing to download.')
       return
     }
