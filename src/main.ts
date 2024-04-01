@@ -95,17 +95,20 @@ const run = async () => {
       return
     }
 
-    const eachDownloadFile = async (cb: (i: number, localFile: LocalFile, patchFile: PatchFile) => Promise<void>) => {
-      for (const _i in downloadFiles) {
+    const eachFile = async (type: 'client' | 'download', cb: (i: number, localFile: LocalFile, patchFile: PatchFile) => Promise<void>) => {
+      const baseFiles = type === 'client'
+        ? clientFiles
+        : downloadFiles
+      for (const _i in baseFiles) {
         const i = Number(_i)
-        const { localFile, patchFile } = downloadFiles[i]
+        const { localFile, patchFile } = baseFiles[i]
         await cb(i, localFile, patchFile)
       }
     }
 
     consola.start('Downloading client files...')
     await removeDirectory(tempDir)
-    await eachDownloadFile(async (i, localFile, patchFile) => {
+    await eachFile('download', async (i, localFile, patchFile) => {
       consola.log(`Downloading file ${i + 1} of ${downloadFileCount}: ${patchFile.path}...`)
       const localPath = localFile.getDownloadPath()
       await createDirectory(localPath)
@@ -124,7 +127,7 @@ const run = async () => {
     consola.success(`Client files downloaded.`)
 
     consola.start('Extracing client files...')
-    await eachDownloadFile(async (i, localFile, patchFile) => {
+    await eachFile('download', async (i, localFile, patchFile) => {
       consola.log(`Extracing file ${i + 1} of ${downloadFileCount}: ${patchFile.path}...`)
 
       const path = localFile.getDownloadPath()
@@ -140,7 +143,7 @@ const run = async () => {
     consola.success('Client files extracted.')
 
     consola.start('Validating client files...')
-    await eachDownloadFile(async (i, localFile, patchFile) => {
+    await eachFile('download', async (i, localFile, patchFile) => {
       consola.log(`Validating file ${i + 1} of ${downloadFileCount}: ${patchFile.path}...`)
 
       if (!existsSync(localFile.path))
@@ -169,7 +172,7 @@ const run = async () => {
     const zipChunkSize = 2 * 1024 * 1024 * 1024 // 2GB
     let zipChunkFiles: ChunkFile[] = []
     let zipSize = 0
-    await eachDownloadFile(async (i, localFile, patchFile) => {
+    await eachFile('client', async (i, localFile, patchFile) => {
       zipChunkFiles.push({
         srcPath: localFile.path,
         filePath: patchFile.path,
