@@ -25,6 +25,11 @@ jobs:
         cache: 'pnpm'
     - name: Install dependencies
       run: pnpm i
+    - name: Restore cached client files
+      uses: actions/cache/restore@v4
+      with:
+        path: client
+        key: client
     - name: Start client archiving
       run: pnpm start
     - name: Expose meta
@@ -52,3 +57,8 @@ jobs:
       with:
         body: 'Release date: ${{ steps.date.outputs.time }}'
         artifacts: 'archives/*.zip'
+    - name: Save client files to cache
+      uses: actions/cache/save@v4
+      with:
+        path: client
+        key: client
