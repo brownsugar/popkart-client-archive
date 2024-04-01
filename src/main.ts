@@ -36,7 +36,7 @@ const run = async () => {
 
     consola.start('Checking version...')
     if (meta.version && meta.version >= patchInfo.version) {
-      consola.success(`Client is up-to-date, nothing to do. Current version: ${meta.version}.`)
+      consola.info(`Client is up-to-date, nothing to do. Current version: ${meta.version}.`)
       return
     }
     consola.success(`New version found, previous version: ${meta.version}, latest version: ${patchInfo.version}.`)
@@ -53,21 +53,36 @@ const run = async () => {
         localFile: new LocalFile(baseDir, patchFile.path, tempDir),
         patchFile,
       }))
-    const clientFileCount = clientFiles.length
-    consola.success(`Client files loaded. (${clientFileCount} files)`)
+    consola.success(`Client files loaded. (${clientFiles.length} files)`)
 
-    const eachClientFiles = async (cb: (i: number, localFile: LocalFile, patchFile: PatchFile) => Promise<void>) => {
-      for (const _i in clientFiles) {
+    consola.start('Filtering client files...')
+    const downloadFiles: typeof clientFiles = []
+    for (const { localFile, patchFile } of clientFiles) {
+      const succeed = await localFile.loadMeta()
+      if (succeed && localFile.crc === patchFile.crc)
+        continue
+      downloadFiles.push({ localFile, patchFile })
+    }
+    const downloadFileCount = downloadFiles.length
+    consola.success(`Client files filtered. (${downloadFileCount} files to download)`)
+
+    if (downloadFileCount === 0) {
+      consola.info('Nothing to download.')
+      return
+    }
+
+    const eachDownloadFile = async (cb: (i: number, localFile: LocalFile, patchFile: PatchFile) => Promise<void>) => {
+      for (const _i in downloadFiles) {
         const i = Number(_i)
-        const { localFile, patchFile } = clientFiles[i]
+        const { localFile, patchFile } = downloadFiles[i]
         await cb(i, localFile, patchFile)
       }
     }
 
     consola.start('Downloading client files...')
     await emptyDirectory(tempDir)
-    await eachClientFiles(async (i, localFile, patchFile) => {
-      consola.log(`Downloading file ${i + 1} of ${clientFileCount}: ${patchFile.path}...`)
+    await eachDownloadFile(async (i, localFile, patchFile) => {
+      consola.log(`Downloading file ${i + 1} of ${downloadFileCount}: ${patchFile.path}...`)
       const localPath = localFile.getDownloadPath()
       await createDirectory(localPath)
 
@@ -85,8 +100,8 @@ const run = async () => {
     consola.success(`Client files downloaded.`)
 
     consola.start('Extracing client files...')
-    await eachClientFiles(async (i, localFile, patchFile) => {
-      consola.log(`Extracing file ${i + 1} of ${clientFileCount}: ${patchFile.path}...`)
+    await eachDownloadFile(async (i, localFile, patchFile) => {
+      consola.log(`Extracing file ${i + 1} of ${downloadFileCount}: ${patchFile.path}...`)
 
       const path = localFile.getDownloadPath()
       await ungzip(path)
@@ -101,8 +116,8 @@ const run = async () => {
     consola.success('Client files extracted.')
 
     consola.start('Validating client files...')
-    await eachClientFiles(async (i, localFile, patchFile) => {
-      consola.log(`Validating file ${i + 1} of ${clientFileCount}: ${patchFile.path}...`)
+    await eachDownloadFile(async (i, localFile, patchFile) => {
+      consola.log(`Validating file ${i + 1} of ${downloadFileCount}: ${patchFile.path}...`)
 
       if (!existsSync(localFile.path))
         throw new Error('File not found: ' + localFile.filePath)
@@ -130,13 +145,13 @@ const run = async () => {
     const zipChunkSize = 2 * 1024 * 1024 * 1024 // 2GB
     let zipChunkFiles: ChunkFile[] = []
     let zipSize = 0
-    await eachClientFiles(async (i, localFile, patchFile) => {
+    await eachDownloadFile(async (i, localFile, patchFile) => {
       zipChunkFiles.push({
         srcPath: localFile.path,
         filePath: patchFile.path,
       })
       zipSize += patchFile.size
-      if (zipSize >= zipChunkSize || i === clientFileCount - 1) {
+      if (zipSize >= zipChunkSize || i === downloadFileCount - 1) {
         zipChunks.push(zipChunkFiles)
         zipSize = 0
         zipChunkFiles = []
@@ -167,11 +182,12 @@ const run = async () => {
       flag: 'w',
     })
     consola.success('Meta file updated.')
-    consola.success(`Done in ${getPerformanceResult()}s.`)
   } catch (e) {
     consola.fatal('An error occurred.', e)
     consola.log(`Done in ${getPerformanceResult()}s.`)
     process.exit(1)
+  } finally {
+    consola.success(`Done in ${getPerformanceResult()}s.`)
   }
 }
 run()
