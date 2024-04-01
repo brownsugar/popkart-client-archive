@@ -35,11 +35,8 @@ jobs:
     - name: Expose meta
       id: meta
       run: |
-        content=`cat ./meta.json`
-        content="${content//'%'/'%25'}"
-        content="${content//$'\n'/'%0A'}"
-        content="${content//$'\r'/'%0D'}"
-        echo "::set-output name=metaJson::$content"
+        $json = Get-Content 'meta.json' | Out-String | ConvertFrom-Json
+        echo "::set-output name=metaJson::$json"
     - name: Commit meta.json and create a new tag
       uses: stefanzweifel/git-auto-commit-action@v5
       with:
