@@ -32,6 +32,11 @@ jobs:
         key: client
     - name: Start client archiving
       run: pnpm start
+    - name: Save client files to cache
+      uses: actions/cache/save@v4
+      with:
+        path: client
+        key: client
     - name: Expose meta
       id: meta
       run: |
@@ -54,8 +59,3 @@ jobs:
       with:
         body: 'Release date: ${{ steps.date.outputs.time }}'
         artifacts: 'archives/*.zip'
-    - name: Save client files to cache
-      uses: actions/cache/save@v4
-      with:
-        path: client
-        key: client
