@@ -43,6 +43,8 @@ export const filetimeToUnix = (high: number, low: number) => {
 }
 
 export const clearStdoutLastLine = () => {
-  process.stdout.moveCursor(0, -1)
-  process.stdout.clearLine(1)
+  if (process.stdout.isTTY) {
+    process.stdout.moveCursor(0, -1)
+    process.stdout.clearLine(1)
+  }
 }
