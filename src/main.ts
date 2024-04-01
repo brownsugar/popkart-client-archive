@@ -22,6 +22,10 @@ import type { PatchFile } from './lib/kart-files'
 
 const run = async () => {
   const t0 = performance.now()
+  const getPerformanceResult = () => {
+    const t1 = performance.now()
+    return ((t1 - t0) / 1000).toFixed(2)
+  }
   try {
     consola.box(`PopKart Client archiver v${packageJson.version}`)
 
@@ -163,11 +167,11 @@ const run = async () => {
       flag: 'w',
     })
     consola.success('Meta file updated.')
+    consola.success(`Done in ${getPerformanceResult()}s.`)
   } catch (e) {
     consola.fatal('An error occurred.', e)
-  } finally {
-    const t1 = performance.now()
-    consola.success(`Done in ${((t1 - t0) / 1000).toFixed(2)}s.`)
+    consola.log(`Done in ${getPerformanceResult()}s.`)
+    process.exit(1)
   }
 }
 run()
