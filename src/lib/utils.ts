@@ -16,7 +16,7 @@ export const createDirectory = (path: string) => {
   })
 }
 
-export const emptyDirectory = (path: string) => {
+export const removeDirectory = (path: string) => {
   return rm(path, {
     recursive: true,
     force: true,

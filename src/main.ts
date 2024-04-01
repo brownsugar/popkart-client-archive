@@ -8,7 +8,7 @@ import { Zip } from 'zip-lib'
 import KartPatchSocket from './lib/kart-patch-socket'
 import { KartNfo2, LocalFile } from './lib/kart-files'
 import {
-  emptyDirectory,
+  removeDirectory,
   createDirectory,
   resolveUrl,
   clearStdoutLastLine,
@@ -80,7 +80,7 @@ const run = async () => {
     }
 
     consola.start('Downloading client files...')
-    await emptyDirectory(tempDir)
+    await removeDirectory(tempDir)
     await eachDownloadFile(async (i, localFile, patchFile) => {
       consola.log(`Downloading file ${i + 1} of ${downloadFileCount}: ${patchFile.path}...`)
       const localPath = localFile.getDownloadPath()
@@ -112,7 +112,7 @@ const run = async () => {
       })
       clearStdoutLastLine()
     })
-    await emptyDirectory(tempDir)
+    await removeDirectory(tempDir)
     consola.success('Client files extracted.')
 
     consola.start('Validating client files...')
@@ -158,7 +158,7 @@ const run = async () => {
       }
     })
     const archivesPath = resolve(rootDir, 'archives')
-    await emptyDirectory(archivesPath)
+    await removeDirectory(archivesPath)
     for (const _i in zipChunks) {
       const i = Number(_i)
       const files = zipChunks[i]
