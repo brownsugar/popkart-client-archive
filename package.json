@@ -1,6 +1,6 @@
 {
   "name": "popkart-client-archive",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "A PopKart client archiver.",
   "scripts": {
     "start": "ts-node src/main.ts",
