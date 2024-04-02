@@ -67,6 +67,7 @@ const run = async () => {
     const downloadFileCount = downloadFiles.length
     consola.success(`Client files filtered. (${downloadFileCount} files to download)`)
 
+    let downloadNeeded = true
     if (downloadFileCount === clientFileCount) {
       consola.info('No client cache found, downloading full client...')
       const clientArchiveUrl = process.env.CLIENT_ARCHIVE_URL
@@ -90,7 +91,7 @@ const run = async () => {
       return
     } else if (downloadFileCount === 0) {
       consola.info('Nothing to download.')
-      return
+      downloadNeeded = false
     }
 
     const eachFile = async (type: 'client' | 'download', cb: (i: number, localFile: LocalFile, patchFile: PatchFile) => Promise<void>) => {
@@ -104,41 +105,43 @@ const run = async () => {
       }
     }
 
-    consola.start('Downloading client files...')
-    await removeDirectory(tempDir)
-    await eachFile('download', async (i, localFile, patchFile) => {
-      consola.log(`Downloading file ${i + 1} of ${downloadFileCount}: ${patchFile.path}...`)
-      const localPath = localFile.getDownloadPath()
-      await createDirectory(localPath)
+    if (downloadNeeded) {
+      consola.start('Downloading client files...')
+      await removeDirectory(tempDir)
+      await eachFile('download', async (i, localFile, patchFile) => {
+        consola.log(`Downloading file ${i + 1} of ${downloadFileCount}: ${patchFile.path}...`)
+        const localPath = localFile.getDownloadPath()
+        await createDirectory(localPath)
 
-      const downloader = new EasyDl(
-        resolveUrl(localFile.getRawFilePath(), remoteBaseUrl),
-        localPath,
-        {
-          connections: 8,
-          maxRetry: 5,
-        }
-      )
-      await downloader.wait()
-      clearStdoutLastLine()
-    })
-    consola.success(`Client files downloaded.`)
-
-    consola.start('Extracing client files...')
-    await eachFile('download', async (i, localFile, patchFile) => {
-      consola.log(`Extracing file ${i + 1} of ${downloadFileCount}: ${patchFile.path}...`)
-
-      const path = localFile.getDownloadPath()
-      await ungzip(path)
-      await rm(path)
-      localFile.extracted = true
-      await move(localFile.getDownloadPath(), localFile.getDestinationPath(), {
-        overwrite: true,
+        const downloader = new EasyDl(
+          resolveUrl(localFile.getRawFilePath(), remoteBaseUrl),
+          localPath,
+          {
+            connections: 8,
+            maxRetry: 5,
+          }
+        )
+        await downloader.wait()
+        clearStdoutLastLine()
       })
-      clearStdoutLastLine()
-    })
-    await removeDirectory(tempDir)
-    consola.success('Client files extracted.')
+      consola.success(`Client files downloaded.`)
+
+      consola.start('Extracing client files...')
+      await eachFile('download', async (i, localFile, patchFile) => {
+        consola.log(`Extracing file ${i + 1} of ${downloadFileCount}: ${patchFile.path}...`)
+
+        const path = localFile.getDownloadPath()
+        await ungzip(path)
+        await rm(path)
+        localFile.extracted = true
+        await move(localFile.getDownloadPath(), localFile.getDestinationPath(), {
+          overwrite: true,
+        })
+        clearStdoutLastLine()
+      })
+      await removeDirectory(tempDir)
+      consola.success('Client files extracted.')
+    }
 
     consola.start('Validating client files...')
     await eachFile('download', async (i, localFile, patchFile) => {
