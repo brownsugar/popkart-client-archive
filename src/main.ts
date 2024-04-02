@@ -94,22 +94,23 @@ const run = async () => {
       downloadNeeded = false
     }
 
-    const eachFile = async (type: 'client' | 'download', cb: (i: number, localFile: LocalFile, patchFile: PatchFile) => Promise<void>) => {
+    const eachFile = async (type: 'client' | 'download', cb: (i: number, localFile: LocalFile, patchFile: PatchFile, fileCount: number) => Promise<void>) => {
       const baseFiles = type === 'client'
         ? clientFiles
         : downloadFiles
+      const fileCount = baseFiles.length
       for (const _i in baseFiles) {
         const i = Number(_i)
         const { localFile, patchFile } = baseFiles[i]
-        await cb(i, localFile, patchFile)
+        await cb(i, localFile, patchFile, fileCount)
       }
     }
 
     if (downloadNeeded) {
       consola.start('Downloading client files...')
       await removeDirectory(tempDir)
-      await eachFile('download', async (i, localFile, patchFile) => {
-        consola.log(`Downloading file ${i + 1} of ${downloadFileCount}: ${patchFile.path}...`)
+      await eachFile('download', async (i, localFile, patchFile, fileCount) => {
+        consola.log(`Downloading file ${i + 1} of ${fileCount}: ${patchFile.path}...`)
         const localPath = localFile.getDownloadPath()
         await createDirectory(localPath)
 
@@ -127,8 +128,8 @@ const run = async () => {
       consola.success(`Client files downloaded.`)
 
       consola.start('Extracing client files...')
-      await eachFile('download', async (i, localFile, patchFile) => {
-        consola.log(`Extracing file ${i + 1} of ${downloadFileCount}: ${patchFile.path}...`)
+      await eachFile('download', async (i, localFile, patchFile, fileCount) => {
+        consola.log(`Extracing file ${i + 1} of ${fileCount}: ${patchFile.path}...`)
 
         const path = localFile.getDownloadPath()
         await ungzip(path)
@@ -144,8 +145,8 @@ const run = async () => {
     }
 
     consola.start('Validating client files...')
-    await eachFile('download', async (i, localFile, patchFile) => {
-      consola.log(`Validating file ${i + 1} of ${downloadFileCount}: ${patchFile.path}...`)
+    await eachFile('client', async (i, localFile, patchFile, fileCount) => {
+      consola.log(`Validating file ${i + 1} of ${fileCount}: ${patchFile.path}...`)
 
       if (!existsSync(localFile.path))
         throw new Error('File not found: ' + localFile.filePath)
@@ -173,13 +174,13 @@ const run = async () => {
     const zipChunkSize = 2 * 1024 * 1024 * 1024 // 2GB
     let zipChunkFiles: ChunkFile[] = []
     let zipSize = 0
-    await eachFile('client', async (i, localFile, patchFile) => {
+    await eachFile('client', async (i, localFile, patchFile, fileCount) => {
       zipChunkFiles.push({
         srcPath: localFile.path,
         filePath: patchFile.path,
       })
       zipSize += patchFile.size
-      if (zipSize >= zipChunkSize || i === downloadFileCount - 1) {
+      if (zipSize >= zipChunkSize || i === fileCount - 1) {
         zipChunks.push(zipChunkFiles)
         zipSize = 0
         zipChunkFiles = []
