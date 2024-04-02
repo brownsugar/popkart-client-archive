@@ -62,3 +62,4 @@ jobs:
         tag: 'P${{ steps.meta.outputs.version }}'
         body: 'Release date: ${{ steps.date.outputs.time }}'
         artifacts: 'archives/*.zip'
+        makeLatest: true
