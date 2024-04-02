@@ -42,18 +42,6 @@ export const filetimeToUnix = (high: number, low: number) => {
   return Number(timestamp)
 }
 
-export const getArgs = () => {
-  const argv = process.argv ?? []
-  return argv
-    .reduce((result, string) => {
-      if (string.startsWith('--')) {
-        const [key, ...value] = string.slice(2).split('=')
-        result[key] = value.join('=')
-      }
-      return result
-    }, {} as Record<string, string>)
-}
-
 export const clearStdoutLastLine = () => {
   if (process.stdout.isTTY) {
     process.stdout.moveCursor(0, -1)

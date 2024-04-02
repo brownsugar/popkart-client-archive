@@ -8,7 +8,6 @@ import { extract, Zip } from 'zip-lib'
 import KartPatchSocket from './lib/kart-patch-socket'
 import { KartNfo2, LocalFile } from './lib/kart-files'
 import {
-  getArgs,
   removeDirectory,
   createDirectory,
   resolveUrl,
@@ -70,8 +69,7 @@ const run = async () => {
 
     if (downloadFileCount === clientFileCount) {
       consola.info('No client cache found, downloading full client...')
-      const args = getArgs()
-      const clientArchiveUrl = args['client-archive-url']
+      const clientArchiveUrl = process.env.CLIENT_ARCHIVE_URL
       if (!clientArchiveUrl)
         throw new Error('Client archive URL not provided.')
       const clientArchivePath = resolve(rootDir, 'PopKart_Client.zip')
