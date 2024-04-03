@@ -2,10 +2,10 @@ import { resolve } from 'node:path'
 import { rm, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { consola } from 'consola'
+import { setOutput, setFailed } from '@actions/core'
 import EasyDl from 'easydl'
 import { move } from 'fs-extra'
 import { extract, Zip } from 'zip-lib'
-import KartPatchSocket from './lib/kart-patch-socket'
 import { KartNfo2, LocalFile } from './lib/kart-files'
 import {
   removeDirectory,
@@ -14,10 +14,11 @@ import {
   clearStdoutLastLine,
   ungzip,
   filetimeToUnix,
+  getArgs,
 } from './lib/utils'
 import packageJson from '../package.json'
-import server from '../server.json'
 import meta from '../meta.json'
+import type { KartPatchServerInfo } from './lib/kart-patch-socket'
 import type { PatchFile } from './lib/kart-files'
 
 const run = async () => {
@@ -29,17 +30,16 @@ const run = async () => {
   try {
     consola.box(`PopKart Client archiver v${packageJson.version}`)
 
-    consola.start('Loading patch info...')
-    const socket = new KartPatchSocket()
-    const patchInfo = await socket.connect(server.host, server.port)
-    consola.success('Patch info loaded.\n', patchInfo)
-
-    consola.start('Checking version...')
-    if (meta.version && meta.version >= patchInfo.version) {
-      consola.info(`Client is up-to-date, nothing to do. Current version: ${meta.version}.`)
-      return
+    consola.start('Retrieving patch info...')
+    const args = getArgs()
+    if (!args.endpoint || !args.id || !args.version)
+      throw new Error('Patch info not provided.')
+    const patchInfo: KartPatchServerInfo = {
+      endpoint: args.endpoint,
+      id: args.id,
+      version: Number(args.version),
     }
-    consola.success(`New version found, previous version: ${meta.version}, latest version: ${patchInfo.version}.`)
+    consola.success('Patch info retrieved.\n', patchInfo)
 
     consola.start('Loading client files...')
     const remoteBaseUrl = resolveUrl(patchInfo.version.toString(), patchInfo.endpoint)
@@ -92,6 +92,7 @@ const run = async () => {
     } else if (downloadFileCount === 0) {
       consola.info('Nothing to download.')
       downloadNeeded = false
+      setOutput('noClientCache', true)
     }
 
     const eachFile = async (type: 'client' | 'download', cb: (i: number, localFile: LocalFile, patchFile: PatchFile, fileCount: number) => Promise<void>) => {
@@ -212,9 +213,8 @@ const run = async () => {
     })
     consola.success('Meta file updated.')
   } catch (e) {
-    consola.fatal('An error occurred.', e)
-    consola.log(`Done in ${getPerformanceResult()}s.`)
-    process.exit(1)
+    consola.log(`Done with an error occurred in ${getPerformanceResult()}s.`)
+    setFailed(e)
   } finally {
     consola.success(`Done in ${getPerformanceResult()}s.`)
   }

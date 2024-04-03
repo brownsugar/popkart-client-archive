@@ -25,26 +25,39 @@ jobs:
         cache: 'pnpm'
     - name: Install dependencies
       run: pnpm i
+    - name: Check patch info
+      id: check
+      run: pnpm start-check
     - name: Restore cached client files
+      if: ${{ steps.check.outputs.endpoint != null }}
       uses: actions/cache/restore@v4
       with:
         path: client
         key: client
     - name: Start client archiving
-      run: pnpm start
+      id: archive
+      if: ${{ steps.check.outputs.endpoint != null }}
+      run: |
+        pnpm start-main
+        --endpoint=${{ steps.check.outputs.endpoint }}
+        --id=${{ steps.check.outputs.id }}
+        --version=${{ steps.check.outputs.version }}
       env:
         CLIENT_ARCHIVE_URL: ${{ secrets.CLIENT_ARCHIVE_URL }}
     - name: Save client files to cache
+      if: ${{ steps.check.outputs.endpoint != null && steps.archive.outputs.noClientCache != 'true'}}
       uses: actions/cache/save@v4
       with:
         path: client
         key: client
     - name: Expose version
+      if: ${{ steps.check.outputs.endpoint != null }}
       id: meta
       run: |
         $json = Get-Content 'meta.json' | ConvertFrom-Json
         echo "version=$(echo $json.version)" >> $env:GITHUB_OUTPUT
     - name: Commit meta.json and create a new tag
+      if: ${{ steps.check.outputs.endpoint != null }}
       uses: stefanzweifel/git-auto-commit-action@v5
       with:
         branch: main
@@ -52,11 +65,13 @@ jobs:
         file_pattern: meta.json
         tagging_message: 'P${{ steps.meta.outputs.version }}'
     - name: Expose current date
+      if: ${{ steps.check.outputs.endpoint != null }}
       uses: Kaven-Universe/github-action-current-date-time@v1
       id: date
       with:
         format: 'YYYY-MM-DD'
     - name: Create Release
+      if: ${{ steps.check.outputs.endpoint != null }}
       uses: ncipollo/release-action@v1
       with:
         tag: 'P${{ steps.meta.outputs.version }}'
