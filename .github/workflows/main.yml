@@ -38,9 +38,9 @@ jobs:
       id: archive
       if: ${{ steps.check.outputs.endpoint != null }}
       run: |
-        pnpm start-main
-        --endpoint=${{ steps.check.outputs.endpoint }}
-        --id=${{ steps.check.outputs.id }}
+        pnpm start-main `
+        --endpoint=${{ steps.check.outputs.endpoint }} `
+        --id=${{ steps.check.outputs.id }} `
         --version=${{ steps.check.outputs.version }}
       env:
         CLIENT_ARCHIVE_URL: ${{ secrets.CLIENT_ARCHIVE_URL }}
