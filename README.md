@@ -1,6 +1,6 @@
 # PopKart Client Archive
 
-A PopKart (Chinese KartRider) client archive.
+A PopKart (Chinese KartRider) FRESH client archive.
 
 ## Status
 
@@ -15,3 +15,5 @@ The client archiver will be executed at 12PM and 10PM on weekdays.
 ### Client files
 
 Client files are available at the [Releases](/releases) page.
+
+Each zip file is not associated with others and can be unzipped independently.
