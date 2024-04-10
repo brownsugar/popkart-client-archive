@@ -25,6 +25,7 @@ const run = async () => {
       return
     }
     consola.success(`New version found, previous version: ${meta.version}, latest version: ${patchInfo.version}.`)
+    consola.info(`Run \`pnpm start-main --endpoint=${patchInfo.endpoint} --id=${patchInfo.id} --version=${patchInfo.version}\` to start the archiving process.`)
     setOutput('endpoint', patchInfo.endpoint)
     setOutput('id', patchInfo.id)
     setOutput('version', patchInfo.version)

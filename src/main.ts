@@ -21,6 +21,7 @@ import meta from '../meta.json'
 import type { KartPatchServerInfo } from './lib/kart-patch-socket'
 import type { PatchFile } from './lib/kart-files'
 
+type archiveType = 'patch' | 'full'
 const run = async () => {
   const t0 = performance.now()
   const getPerformanceResult = () => {
@@ -57,18 +58,18 @@ const run = async () => {
     consola.success(`Client files loaded. (${clientFileCount} files)`)
 
     consola.start('Filtering client files...')
-    const downloadFiles: typeof clientFiles = []
+    const patchFiles: typeof clientFiles = []
     for (const { localFile, patchFile } of clientFiles) {
       const succeed = await localFile.loadMeta()
       if (succeed && localFile.crc === patchFile.crc)
         continue
-      downloadFiles.push({ localFile, patchFile })
+      patchFiles.push({ localFile, patchFile })
     }
-    const downloadFileCount = downloadFiles.length
-    consola.success(`Client files filtered. (${downloadFileCount} files to download)`)
+    const patchFileCount = patchFiles.length
+    consola.success(`Client files filtered. (${patchFileCount} files to download)`)
 
     let downloadNeeded = true
-    if (downloadFileCount === clientFileCount) {
+    if (patchFileCount === clientFileCount) {
       consola.info('No client cache found, downloading full client...')
       const clientArchiveUrl = process.env.CLIENT_ARCHIVE_URL
       if (!clientArchiveUrl)
@@ -89,16 +90,16 @@ const run = async () => {
       consola.success('Full client extracted. The archiver will be re-run.')
       run()
       return
-    } else if (downloadFileCount === 0) {
+    } else if (patchFileCount === 0) {
       consola.info('Nothing to download.')
       downloadNeeded = false
       setOutput('noClientCache', true)
     }
 
-    const eachFile = async (type: 'client' | 'download', cb: (i: number, localFile: LocalFile, patchFile: PatchFile, fileCount: number) => Promise<void>) => {
-      const baseFiles = type === 'client'
-        ? clientFiles
-        : downloadFiles
+    const eachFile = async (type: archiveType, cb: (i: number, localFile: LocalFile, patchFile: PatchFile, fileCount: number) => Promise<void>) => {
+      const baseFiles = type === 'patch'
+        ? patchFiles
+        : clientFiles
       const fileCount = baseFiles.length
       for (const _i in baseFiles) {
         const i = Number(_i)
@@ -110,7 +111,7 @@ const run = async () => {
     if (downloadNeeded) {
       consola.start('Downloading client files...')
       await removeDirectory(tempDir)
-      await eachFile('download', async (i, localFile, patchFile, fileCount) => {
+      await eachFile('patch', async (i, localFile, patchFile, fileCount) => {
         consola.log(`Downloading file ${i + 1} of ${fileCount}: ${patchFile.path}...`)
         const localPath = localFile.getDownloadPath()
         await createDirectory(localPath)
@@ -129,7 +130,7 @@ const run = async () => {
       consola.success(`Client files downloaded.`)
 
       consola.start('Extracing client files...')
-      await eachFile('download', async (i, localFile, patchFile, fileCount) => {
+      await eachFile('patch', async (i, localFile, patchFile, fileCount) => {
         consola.log(`Extracing file ${i + 1} of ${fileCount}: ${patchFile.path}...`)
 
         const path = localFile.getDownloadPath()
@@ -146,7 +147,7 @@ const run = async () => {
     }
 
     consola.start('Validating client files...')
-    await eachFile('client', async (i, localFile, patchFile, fileCount) => {
+    await eachFile('full', async (i, localFile, patchFile, fileCount) => {
       consola.log(`Validating file ${i + 1} of ${fileCount}: ${patchFile.path}...`)
 
       if (!existsSync(localFile.path))
@@ -171,35 +172,56 @@ const run = async () => {
       srcPath: string
       filePath: string
     }
-    const zipChunks: ChunkFile[][] = []
-    const zipChunkSize = 2 * 1024 * 1024 * 1024 // 2GB
-    let zipChunkFiles: ChunkFile[] = []
-    let zipSize = 0
-    await eachFile('client', async (i, localFile, patchFile, fileCount) => {
-      zipChunkFiles.push({
-        srcPath: localFile.path,
-        filePath: patchFile.path,
-      })
-      zipSize += patchFile.size
-      if (zipSize >= zipChunkSize || i === fileCount - 1) {
-        zipChunks.push(zipChunkFiles)
-        zipSize = 0
-        zipChunkFiles = []
-      }
-    })
+    interface archiveFile {
+      type: archiveType
+      chunks: ChunkFile[][]
+    }
+    const archiveFiles: archiveFile[] = [
+      {
+        type: 'patch',
+        chunks: [],
+      },
+      {
+        type: 'full',
+        chunks: [],
+      },
+    ]
     const archivesPath = resolve(rootDir, 'archives')
     await removeDirectory(archivesPath)
-    for (const _i in zipChunks) {
-      const i = Number(_i)
-      const files = zipChunks[i]
-      const zipName = `PopKart_Client_P${patchInfo.version}_${(i + 1).toString().padStart(2, '0')}.zip`
-      const destPath = resolve(archivesPath, zipName)
-      consola.log(`Archiving chunk ${i + 1} of ${zipChunks.length}: ${destPath}`)
-      const zip = new Zip()
-      files.forEach(file => {
-        zip.addFile(file.srcPath, file.filePath)
+    const zipChunkSize = 2 * 1024 * 1024 * 1024 // 2GB
+    for (const archive of archiveFiles) {
+      consola.info(`Archiving ${archive.type} files...`)
+      let zipChunkFiles: ChunkFile[] = []
+      let zipSize = 0
+      await eachFile(archive.type, async (i, localFile, patchFile, fileCount) => {
+        zipChunkFiles.push({
+          srcPath: localFile.path,
+          filePath: patchFile.path,
+        })
+        zipSize += patchFile.size
+        if (zipSize >= zipChunkSize || i === fileCount - 1) {
+          archive.chunks.push(zipChunkFiles)
+          zipSize = 0
+          zipChunkFiles = []
+        }
       })
-      await zip.archive(destPath)
+      for (const _i in archive.chunks) {
+        const i = Number(_i)
+        const files = archive.chunks[i]
+        let zipName = 'PopKart_'
+        if (archive.type === 'full')
+          zipName += `Client`
+        else
+          zipName += `Patch_P${meta.version}`
+        zipName += `_P${patchInfo.version}_${(i + 1).toString().padStart(2, '0')}.zip`
+        const destPath = resolve(archivesPath, zipName)
+        consola.log(`Archiving chunk ${i + 1} of ${archive.chunks.length}: ${destPath}`)
+        const zip = new Zip()
+        files.forEach(file => {
+          zip.addFile(file.srcPath, file.filePath)
+        })
+        await zip.archive(destPath)
+      }
     }
     consola.success('Client files archived.')
 

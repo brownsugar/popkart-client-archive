@@ -14,6 +14,18 @@ The client archiver will be executed at 12PM and 10PM on weekdays.
 
 ### Client files
 
-Client files are available at the [Releases](/releases) page.
+Client files are separated into 2 types — full files & patch files, and they're available at [Releases](/releases) page, each zip file is not associated with others and can be unzipped independently.
 
-Each zip file is not associated with others and can be unzipped independently.
+### Naming rules
+
+#### Full files
+
+```
+PopKart_Client_P{ClientVersion}_{SequenceNumber}.zip
+```
+
+#### Patch files
+
+```
+PopKart_Patch_P{PreviousVersion}_P{ClientVersion}_{SequenceNumber}.zip
+```
