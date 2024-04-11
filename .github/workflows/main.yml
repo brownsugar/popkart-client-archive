@@ -28,12 +28,12 @@ jobs:
     - name: Check patch info
       id: check
       run: pnpm start-check
-    - name: Restore cached client files
-      if: ${{ steps.check.outputs.endpoint != null }}
+    - name: Restore or ping cached client files
       uses: actions/cache/restore@v4
       with:
-        path: client
         key: client
+        path: client
+        lookup-only: ${{ steps.check.outputs.endpoint == null }}
     - name: Start client archiving
       id: archive
       if: ${{ steps.check.outputs.endpoint != null }}
@@ -48,8 +48,8 @@ jobs:
       if: ${{ steps.check.outputs.endpoint != null && steps.archive.outputs.noClientCache != 'true'}}
       uses: actions/cache/save@v4
       with:
-        path: client
         key: client
+        path: client
     - name: Commit meta.json and create a new tag
       if: ${{ steps.check.outputs.endpoint != null }}
       uses: stefanzweifel/git-auto-commit-action@v5
