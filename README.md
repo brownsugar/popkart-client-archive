@@ -10,7 +10,7 @@ A PopKart (Chinese KartRider) FRESH client archive.
 
 ### Update frequency
 
-The client archiver will be executed at 12PM and 10PM on weekdays.
+The client archiver will be executed at 10AM and 10PM on weekdays.
 
 ### Client files
 
