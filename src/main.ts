@@ -80,7 +80,7 @@ const run = async () => {
         clientArchivePath,
         {
           existBehavior: 'overwrite',
-        }
+        },
       )
       await downloader.wait()
       consola.success('Full client downloaded.')
@@ -122,7 +122,7 @@ const run = async () => {
           {
             connections: 8,
             maxRetry: 5,
-          }
+          },
         )
         await downloader.wait()
         clearStdoutLastLine()

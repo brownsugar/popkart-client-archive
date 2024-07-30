@@ -9,11 +9,12 @@ import { Buffer } from 'node:buffer'
 import { resolveUrl } from './utils'
 
 class KartCrc {
-  constructor (
-    readonly path: string
+  // eslint-disable-next-line no-useless-constructor
+  constructor(
+    readonly path: string,
   ) {}
 
-  async generateCrc () {
+  async generateCrc() {
     const file = await open(this.path, 'r')
     const stat = await file.stat()
     let filesize = stat.size
@@ -43,7 +44,7 @@ class KartCrc {
     return result
   }
 
-  private calculateChunk (prevResult: number, buffer: Buffer, bufferLength: number) {
+  private calculateChunk(prevResult: number, buffer: Buffer, bufferLength: number) {
     const v3 = buffer
     let v4 = prevResult & 0xFFFF // convert int to int16
     let v5 = prevResult >>> 16
@@ -112,7 +113,8 @@ class KartCrc {
 }
 
 export class PatchFile {
-  constructor (
+  // eslint-disable-next-line no-useless-constructor
+  constructor(
     readonly path: string,
     readonly unknownValue: string,
     readonly crc: number,
@@ -124,7 +126,7 @@ export class PatchFile {
     readonly delta1Size: number,
     readonly delta2TargetCrc: number,
     readonly delta2Size: number,
-    readonly alwaysZero: 0
+    readonly alwaysZero: 0,
   ) {}
 }
 
@@ -137,17 +139,17 @@ export class LocalFile extends KartCrc {
   target: 'full' | 'delta1' | 'delta2' = 'full'
   extracted = false
 
-  constructor (
+  constructor(
     readonly basePath: string,
     readonly filePath: string,
-    readonly tempDir: string
+    readonly tempDir: string,
   ) {
     const fullPath = resolve(basePath, filePath)
     super(fullPath)
     this.basename = basename(filePath)
   }
 
-  async loadMeta () {
+  async loadMeta() {
     if (!existsSync(this.path))
       return false
 
@@ -158,19 +160,19 @@ export class LocalFile extends KartCrc {
     return true
   }
 
-  getDestinationPath () {
+  getDestinationPath() {
     return resolve(this.basePath, this.getRawFilePath())
   }
 
-  getDownloadPath () {
+  getDownloadPath() {
     return resolve(this.basePath, this.tempDir, this.getRawFilePath())
   }
 
-  getRawFilePath () {
+  getRawFilePath() {
     return this.filePath + this.getRawFileExt()
   }
 
-  private getRawFileExt () {
+  private getRawFileExt() {
     return this.target === 'full'
       ? this.extracted ? '' : '.gz'
       : `.${this.target}`
@@ -180,11 +182,11 @@ export class LocalFile extends KartCrc {
 export class KartNfo2 {
   url: string
 
-  constructor (endpoint: string) {
+  constructor(endpoint: string) {
     this.url = resolveUrl('files.nfo2', endpoint)
   }
 
-  async load () {
+  async load() {
     const response = await fetch(this.url)
     const data = await response.text()
     if (!data.startsWith('NFO200'))

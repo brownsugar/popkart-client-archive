@@ -15,7 +15,7 @@ export interface KartPatchServerInfo {
 export default class KartPatchSocket {
   socket: Socket = null
 
-  connect (host: string, port: number) {
+  connect(host: string, port: number) {
     return new Promise<KartPatchServerInfo>((resolve, reject) => {
       consola.info('[KartPatchSocket] Connecting to patch server...')
       this.socket = new Socket()

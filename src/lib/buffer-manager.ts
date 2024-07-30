@@ -5,15 +5,15 @@
 import BufferReader from 'buffer-reader'
 
 export default class BufferManager extends BufferReader {
-  nextBool () {
+  nextBool() {
     return this.nextByte() === 1
   }
 
-  nextByte () {
+  nextByte() {
     return this.nextBuffer(1)[0]
   }
 
-  nextShort (direct = false) {
+  nextShort(direct = false) {
     const length = this.nextUInt16LE()
     if (direct)
       return length // The length is the value
@@ -22,7 +22,7 @@ export default class BufferManager extends BufferReader {
     return buffer.readUInt16LE()
   }
 
-  nextStringAuto (ascii = false) {
+  nextStringAuto(ascii = false) {
     const length = this.nextUInt32LE()
     if (!length)
       return ''

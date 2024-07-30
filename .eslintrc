@@ -1,9 +1,0 @@
-{
-  "root": true,
-  "extends": [
-    "@brownsugar/typescript"
-  ],
-  "rules": {
-    "no-useless-constructor": "off"
-  }
-}

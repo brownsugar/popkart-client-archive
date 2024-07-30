@@ -5,7 +5,7 @@
   "scripts": {
     "start-check": "ts-node src/check.ts",
     "start-main": "ts-node src/main.ts",
-    "lint": "eslint . --ext .ts",
+    "lint": "eslint .",
     "postversion": "git push && git push --tags"
   },
   "repository": {
@@ -20,19 +20,19 @@
   "homepage": "https://github.com/brownsugar/popkart-client-archive#readme",
   "packageManager": "pnpm@8.12.1+sha256.28ca61ece5a496148b73fabc9afb820f9c3fec4f55f04ce45a2cea0a5219f2e1",
   "devDependencies": {
-    "@brownsugar/eslint-config-typescript": "^2.2.4",
+    "@brownsugar/eslint-config": "^3.2.1",
     "@types/buffer-reader": "^0.1.3",
     "@types/fs-extra": "^11.0.4",
-    "eslint": "^8.57.0",
+    "eslint": "^9.8.0",
     "ts-node": "^10.9.2"
   },
   "dependencies": {
     "@actions/core": "^1.10.1",
     "buffer-reader": "^0.1.0",
     "consola": "^3.2.3",
-    "easydl": "^1.1.1",
+    "easydl": "^1.2.0",
     "fs-extra": "^11.2.0",
     "utimes": "^5.2.1",
-    "zip-lib": "^1.0.3"
+    "zip-lib": "^1.0.4"
   }
 }

@@ -3,5 +3,6 @@
     "editor.codeActionsOnSave": [
       "source.fixAll.eslint",
     ]
-  }
+  },
+  "eslint.useFlatConfig": true
 }
