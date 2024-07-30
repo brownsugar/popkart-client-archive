@@ -199,11 +199,14 @@ const run = async () => {
           filePath: patchFile.path,
         })
         zipSize += patchFile.size
-        if (zipSize >= zipChunkSize || i === fileCount - 1) {
+        if (zipSize >= zipChunkSize) {
+          const file = zipChunkFiles.pop()
           archive.chunks.push(zipChunkFiles)
-          zipSize = 0
-          zipChunkFiles = []
+          zipSize = patchFile.size
+          zipChunkFiles = [file]
         }
+        if (i === fileCount - 1)
+          archive.chunks.push(zipChunkFiles)
       })
       for (const _i in archive.chunks) {
         const i = Number(_i)
