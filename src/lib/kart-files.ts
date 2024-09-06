@@ -6,7 +6,7 @@ import { open } from 'node:fs/promises'
 import { existsSync, statSync } from 'node:fs'
 import { resolve, basename } from 'node:path'
 import { Buffer } from 'node:buffer'
-import { resolveUrl } from './utils'
+import { generateMd5, resolveUrl } from './utils'
 
 class KartCrc {
   // eslint-disable-next-line no-useless-constructor
@@ -14,7 +14,7 @@ class KartCrc {
     readonly path: string,
   ) {}
 
-  async generateCrc() {
+  async generate() {
     const file = await open(this.path, 'r')
     const stat = await file.stat()
     let filesize = stat.size
@@ -112,8 +112,13 @@ class KartCrc {
   }
 }
 
-export class PatchFile {
-  // eslint-disable-next-line no-useless-constructor
+class PatchFile {
+  isTcgMode(): this is TcgPatchFile {
+    return typeof this['md5'] !== 'undefined'
+  }
+}
+
+export class KartPatchFile extends PatchFile {
   constructor(
     readonly path: string,
     readonly unknownValue: string,
@@ -127,37 +132,37 @@ export class PatchFile {
     readonly delta2TargetCrc: number,
     readonly delta2Size: number,
     readonly alwaysZero: 0,
-  ) {}
+  ) {
+    super()
+  }
 }
 
-export class LocalFile extends KartCrc {
-  size = 0
-  mtimeMs = 0
-  crc = 0
+export class TcgPatchFile extends PatchFile {
+  constructor(
+    readonly path: string,
+    readonly path2: string,
+    readonly md5: string,
+    readonly size: number,
+  ) {
+    super()
+  }
+}
 
+class LocalFile {
+  path: string
   basename: string
-  target: 'full' | 'delta1' | 'delta2' = 'full'
-  extracted = false
 
   constructor(
     readonly basePath: string,
     readonly filePath: string,
     readonly tempDir: string,
   ) {
-    const fullPath = resolve(basePath, filePath)
-    super(fullPath)
+    this.path = resolve(basePath, filePath)
     this.basename = basename(filePath)
   }
 
-  async loadMeta() {
-    if (!existsSync(this.path))
-      return false
-
-    const stat = statSync(this.path)
-    this.size = stat.size
-    this.mtimeMs = stat.mtimeMs
-    this.crc = await this.generateCrc()
-    return true
+  isTcgMode(): this is TcgLocalFile {
+    return typeof this['md5'] !== 'undefined'
   }
 
   getDestinationPath() {
@@ -172,10 +177,50 @@ export class LocalFile extends KartCrc {
     return this.filePath + this.getRawFileExt()
   }
 
-  private getRawFileExt() {
+  getRawFileExt() {
+    return ''
+  }
+}
+
+export class KartLocalFile extends LocalFile {
+  size = 0
+  mtimeMs = 0
+  crc = 0
+
+  target: 'full' | 'delta1' | 'delta2' = 'full'
+  extracted = false
+
+  async loadMeta() {
+    if (!existsSync(this.path))
+      return false
+
+    const stat = statSync(this.path)
+    const crc = new KartCrc(this.path)
+    this.size = stat.size
+    this.mtimeMs = stat.mtimeMs
+    this.crc = await crc.generate()
+    return true
+  }
+
+  getRawFileExt() {
     return this.target === 'full'
       ? this.extracted ? '' : '.gz'
       : `.${this.target}`
+  }
+}
+
+export class TcgLocalFile extends LocalFile {
+  size = 0
+  md5 = ''
+
+  async loadMeta() {
+    if (!existsSync(this.path))
+      return false
+
+    const stat = statSync(this.path)
+    this.size = stat.size
+    this.md5 = await generateMd5(this.path)
+    return true
   }
 }
 
@@ -205,8 +250,39 @@ export class KartNfo2 {
               ? unquotedText.replace(/\\/g, '/')
               : Number(unquotedText)
             return value
-          }) as ConstructorParameters<typeof PatchFile>
-        return new PatchFile(...info)
+          }) as ConstructorParameters<typeof KartPatchFile>
+        return new KartPatchFile(...info)
+      })
+      // .slice(0, 20) // FOR DEBUGGING ONLY
+  }
+}
+
+export class KartTxf {
+  url: string
+
+  constructor(endpoint: string) {
+    this.url = resolveUrl('NT.txf', endpoint)
+  }
+
+  async load() {
+    const response = await fetch(this.url)
+    const data = await response.text()
+    if (!data.includes(':\\'))
+      throw new Error('[KartTxf] Invalid txf file.\n' + data)
+
+    return data
+      .trim()
+      .split('\r\n')
+      .map(line => {
+        const info = line
+          .split(':')
+          .map(text => {
+            const value = isNaN(Number(text))
+              ? text.replace(/\\/g, '/')
+              : Number(text)
+            return value
+          }) as ConstructorParameters<typeof TcgPatchFile>
+        return new TcgPatchFile(...info)
       })
       // .slice(0, 20) // FOR DEBUGGING ONLY
   }

@@ -28,6 +28,8 @@ jobs:
     - name: Check patch info
       id: check
       run: pnpm start-check
+      env:
+        PATCH_SERVER_ENDPOINT: ${{ secrets.PATCH_SERVER_ENDPOINT }}
     - name: Restore or ping cached client files
       uses: actions/cache/restore@v4
       with:
@@ -41,7 +43,8 @@ jobs:
         pnpm start-main `
         --endpoint=${{ steps.check.outputs.endpoint }} `
         --id=${{ steps.check.outputs.id }} `
-        --version=${{ steps.check.outputs.version }}
+        --version=${{ steps.check.outputs.version }} `
+        --mode=${{ steps.check.outputs.mode }}
       env:
         CLIENT_ARCHIVE_URL: ${{ secrets.CLIENT_ARCHIVE_URL }}
     - name: Save client files to cache

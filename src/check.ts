@@ -1,9 +1,10 @@
 import { consola } from 'consola'
 import { setOutput, setFailed } from '@actions/core'
-import KartPatchSocket from './lib/kart-patch-socket'
+import KartPatch from './lib/kart-patch'
 import packageJson from '../package.json'
 import server from '../server.json'
 import meta from '../meta.json'
+import type { KartPatchServerInfo } from './lib/kart-patch'
 
 const run = async () => {
   const t0 = performance.now()
@@ -15,8 +16,17 @@ const run = async () => {
     consola.box(`PopKart Client archiver v${packageJson.version}`)
 
     consola.start('Loading patch info...')
-    const socket = new KartPatchSocket()
-    const patchInfo = await socket.connect(server.host, server.port)
+    const tcgServerEndpoint = process.env.PATCH_SERVER_ENDPOINT
+    const kartPatch = new KartPatch()
+
+    let patchInfo: KartPatchServerInfo = null
+    if (tcgServerEndpoint) {
+      consola.info('Connecting to TCG server...')
+      patchInfo = await kartPatch.connectTCGServer(tcgServerEndpoint)
+    } else {
+      consola.info('Connecting to patch socket...')
+      patchInfo = await kartPatch.connectSocket(server.host, server.port)
+    }
     consola.success('Patch info loaded.\n', patchInfo)
 
     consola.start('Checking version...')
@@ -25,10 +35,11 @@ const run = async () => {
       return
     }
     consola.success(`New version found, previous version: ${meta.version}, latest version: ${patchInfo.version}.`)
-    consola.info(`Run \`pnpm start-main --endpoint=${patchInfo.endpoint} --id=${patchInfo.id} --version=${patchInfo.version}\` to start the archiving process.`)
+    consola.info(`Run \`pnpm start-main --endpoint=${patchInfo.endpoint} --id=${patchInfo.id} --version=${patchInfo.version} --mode=${patchInfo.mode}\` to start the archiving process.`)
     setOutput('endpoint', patchInfo.endpoint)
     setOutput('id', patchInfo.id)
     setOutput('version', patchInfo.version)
+    setOutput('mode', patchInfo.mode)
   } catch (e) {
     consola.log(`Done with an error occurred in ${getPerformanceResult()}s.`)
     setFailed(e)

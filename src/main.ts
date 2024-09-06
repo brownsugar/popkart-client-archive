@@ -6,7 +6,7 @@ import { setOutput, setFailed } from '@actions/core'
 import EasyDl from 'easydl'
 import { move } from 'fs-extra'
 import { extract, Zip } from 'zip-lib'
-import { KartNfo2, LocalFile } from './lib/kart-files'
+import { KartNfo2, KartTxf, KartLocalFile, TcgLocalFile } from './lib/kart-files'
 import {
   removeDirectory,
   createDirectory,
@@ -18,10 +18,11 @@ import {
 } from './lib/utils'
 import packageJson from '../package.json'
 import meta from '../meta.json'
-import type { KartPatchServerInfo } from './lib/kart-patch-socket'
-import type { PatchFile } from './lib/kart-files'
+import type { KartPatchServerInfo } from './lib/kart-patch'
+import type { KartPatchFile, TcgPatchFile } from './lib/kart-files'
 
 type archiveType = 'patch' | 'full'
+
 const run = async () => {
   const t0 = performance.now()
   const getPerformanceResult = () => {
@@ -33,35 +34,58 @@ const run = async () => {
 
     consola.start('Retrieving patch info...')
     const args = getArgs()
-    if (!args.endpoint || !args.id || !args.version)
-      throw new Error('Patch info not provided.')
+    if (!args.endpoint || !args.id || !args.version || !args.mode)
+      throw new Error('Patch info not properly provided.')
     const patchInfo: KartPatchServerInfo = {
       endpoint: args.endpoint,
       id: args.id,
       version: Number(args.version),
+      mode: args.mode as KartPatchServerInfo['mode'],
     }
     consola.success('Patch info retrieved.\n', patchInfo)
 
     consola.start('Loading client files...')
-    const remoteBaseUrl = resolveUrl(patchInfo.version.toString(), patchInfo.endpoint)
-    const nfo2 = new KartNfo2(remoteBaseUrl)
-    consola.log('NFO2 URL:', nfo2.url)
+    let remoteBaseUrl = ''
+    let patchFileList: KartPatchFile[] | TcgPatchFile[] = []
+    if (patchInfo.mode === 'tcg') {
+      remoteBaseUrl = patchInfo.endpoint
+      const txf = new KartTxf(remoteBaseUrl)
+      consola.log('TXF URL:', txf.url)
+      patchFileList = await txf.load()
+    } else {
+      remoteBaseUrl = resolveUrl(patchInfo.version.toString(), patchInfo.endpoint)
+      const nfo2 = new KartNfo2(remoteBaseUrl)
+      consola.log('NFO2 URL:', nfo2.url)
+      patchFileList = await nfo2.load()
+    }
     const rootDir = process.cwd()
     const clientDir = resolve(rootDir, 'client')
     const tempDir = resolve(clientDir, 'temp')
-    const clientFiles = (await nfo2.load())
-      .map(patchFile => ({
-        localFile: new LocalFile(clientDir, patchFile.path, tempDir),
+    const clientFiles = patchFileList
+      .map((patchFile: KartPatchFile | TcgPatchFile) => ({
+        localFile: patchInfo.mode === 'tcg'
+          ? new TcgLocalFile(clientDir, patchFile.path, tempDir)
+          : new KartLocalFile(clientDir, patchFile.path, tempDir),
         patchFile,
       }))
     const clientFileCount = clientFiles.length
     consola.success(`Client files loaded. (${clientFileCount} files)`)
 
+    const isHashMatched = (localFile: KartLocalFile | TcgLocalFile, patchFile: KartPatchFile | TcgPatchFile) => {
+      const value1 = localFile.isTcgMode()
+        ? localFile.md5
+        : localFile.crc
+      const value2 = patchFile.isTcgMode()
+        ? patchFile.md5
+        : patchFile.crc
+      return value1 === value2
+    }
+
     consola.start('Filtering client files...')
     const patchFiles: typeof clientFiles = []
     for (const { localFile, patchFile } of clientFiles) {
       const succeed = await localFile.loadMeta()
-      if (succeed && localFile.crc === patchFile.crc)
+      if (succeed && isHashMatched(localFile, patchFile))
         continue
       patchFiles.push({ localFile, patchFile })
     }
@@ -96,7 +120,12 @@ const run = async () => {
       setOutput('noClientCache', true)
     }
 
-    const eachFile = async (type: archiveType, cb: (i: number, localFile: LocalFile, patchFile: PatchFile, fileCount: number) => Promise<void>) => {
+    const eachFile = async (type: archiveType, cb: (
+      i: number,
+      localFile: KartLocalFile | TcgLocalFile,
+      patchFile: KartPatchFile | TcgPatchFile,
+      fileCount: number
+    ) => Promise<void>) => {
       const baseFiles = type === 'patch'
         ? patchFiles
         : clientFiles
@@ -129,21 +158,24 @@ const run = async () => {
       })
       consola.success(`Client files downloaded.`)
 
-      consola.start('Extracing client files...')
-      await eachFile('patch', async (i, localFile, patchFile, fileCount) => {
-        consola.log(`Extracing file ${i + 1} of ${fileCount}: ${patchFile.path}...`)
+      if (patchInfo.mode === 'kart') {
+        consola.start('Extracing client files...')
+        await eachFile('patch', async (i, localFile, patchFile, fileCount) => {
+          consola.log(`Extracing file ${i + 1} of ${fileCount}: ${patchFile.path}...`)
 
-        const path = localFile.getDownloadPath()
-        await ungzip(path)
-        await rm(path)
-        localFile.extracted = true
-        await move(localFile.getDownloadPath(), localFile.getDestinationPath(), {
-          overwrite: true,
+          const path = localFile.getDownloadPath()
+          await ungzip(path)
+          await rm(path)
+          if (!localFile.isTcgMode())
+            localFile.extracted = true
+          await move(localFile.getDownloadPath(), localFile.getDestinationPath(), {
+            overwrite: true,
+          })
+          clearStdoutLastLine()
         })
-        clearStdoutLastLine()
-      })
-      await removeDirectory(tempDir)
-      consola.success('Client files extracted.')
+        await removeDirectory(tempDir)
+        consola.success('Client files extracted.')
+      }
     }
 
     consola.start('Validating client files...')
@@ -153,16 +185,19 @@ const run = async () => {
       if (!existsSync(localFile.path))
         throw new Error('File not found: ' + localFile.filePath)
 
-      // Check file CRC
+      // Check file hash
       await localFile.loadMeta()
-      if (localFile.crc !== patchFile.crc)
-        throw new Error('File CRC mismatch: ' + localFile.filePath)
+      if (isHashMatched(localFile, patchFile))
+        throw new Error('File hash mismatch: ' + localFile.filePath)
 
       // Restore file modification time
-      const { utimes } = require('utimes')
-      await utimes(localFile.path, {
-        mtime: filetimeToUnix(patchFile.dwHighDateTime, patchFile.dwLowDateTime),
-      })
+      if (!patchFile.isTcgMode()) {
+        const { utimes } = require('utimes')
+        await utimes(localFile.path, {
+          mtime: filetimeToUnix(patchFile.dwHighDateTime, patchFile.dwLowDateTime),
+        })
+      }
+
       clearStdoutLastLine()
     })
     consola.success('Client files validated.')

@@ -2,6 +2,7 @@ import { dirname } from 'node:path'
 import { mkdir, rm } from 'node:fs/promises'
 import { createReadStream, createWriteStream } from 'node:fs'
 import { createGunzip } from 'node:zlib'
+import crypto from 'node:crypto'
 
 export const resolveUrl = (input: string, base: string) => {
   return input
@@ -24,7 +25,7 @@ export const removeDirectory = (path: string) => {
 }
 
 export const ungzip = (path: string) =>
-  new Promise(resolve => {
+  new Promise<void>(resolve => {
     const src = createReadStream(path)
     const destination = createWriteStream(path.replace('.gz', ''))
 
@@ -33,6 +34,22 @@ export const ungzip = (path: string) =>
       .pipe(destination)
     destination.on('close', resolve)
   })
+
+export const generateMd5 = (path: string) => {
+  return new Promise<string>((resolve, reject) => {
+    const hash = crypto.createHash('md5')
+    const stream = createReadStream(path)
+    stream.on('data', data => {
+      hash.update(data)
+    })
+    stream.on('end', () => {
+      resolve(hash.digest('hex'))
+    })
+    stream.on('error', e => {
+      reject(e)
+    })
+  })
+}
 
 export const filetimeToUnix = (high: number, low: number) => {
   // Diff between Windows epoch 1601-01-01 00:00:00 & Unix epoch 1970-01-01 00:00:00
