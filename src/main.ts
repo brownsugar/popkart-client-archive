@@ -71,21 +71,22 @@ const run = async () => {
     const clientFileCount = clientFiles.length
     consola.success(`Client files loaded. (${clientFileCount} files)`)
 
-    const isHashMatched = (localFile: KartLocalFile | TcgLocalFile, patchFile: KartPatchFile | TcgPatchFile) => {
-      const value1 = localFile.isTcgMode()
+    const getFileHash = (localFile: KartLocalFile | TcgLocalFile, patchFile: KartPatchFile | TcgPatchFile) => {
+      const local = localFile.isTcgMode()
         ? localFile.md5
         : localFile.crc
-      const value2 = patchFile.isTcgMode()
+      const patch = patchFile.isTcgMode()
         ? patchFile.md5
         : patchFile.crc
-      return value1 === value2
+      return { local, patch }
     }
 
     consola.start('Filtering client files...')
     const patchFiles: typeof clientFiles = []
     for (const { localFile, patchFile } of clientFiles) {
       const succeed = await localFile.loadMeta()
-      if (succeed && isHashMatched(localFile, patchFile))
+      const hash = getFileHash(localFile, patchFile)
+      if (succeed && hash.local === hash.patch)
         continue
       patchFiles.push({ localFile, patchFile })
     }
@@ -187,8 +188,9 @@ const run = async () => {
 
       // Check file hash
       await localFile.loadMeta()
-      if (!isHashMatched(localFile, patchFile))
-        throw new Error('File hash mismatch: ' + localFile.filePath)
+      const hash = getFileHash(localFile, patchFile)
+      if (hash.local !== hash.patch)
+        throw new Error(`File hash mismatch: ${localFile.filePath} (expected ${hash.patch}, got ${hash.local})`)
 
       // Restore file modification time
       if (!patchFile.isTcgMode()) {
