@@ -187,7 +187,7 @@ const run = async () => {
 
       // Check file hash
       await localFile.loadMeta()
-      if (isHashMatched(localFile, patchFile))
+      if (!isHashMatched(localFile, patchFile))
         throw new Error('File hash mismatch: ' + localFile.filePath)
 
       // Restore file modification time
