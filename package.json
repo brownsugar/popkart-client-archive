@@ -18,12 +18,12 @@
     "url": "https://github.com/brownsugar/popkart-client-archive/issues"
   },
   "homepage": "https://github.com/brownsugar/popkart-client-archive#readme",
-  "packageManager": "pnpm@8.12.1+sha256.28ca61ece5a496148b73fabc9afb820f9c3fec4f55f04ce45a2cea0a5219f2e1",
+  "packageManager": "pnpm@9.9.0",
   "devDependencies": {
     "@brownsugar/eslint-config": "^3.2.1",
     "@types/buffer-reader": "^0.1.3",
     "@types/fs-extra": "^11.0.4",
-    "eslint": "^9.8.0",
+    "eslint": "^9.9.1",
     "ts-node": "^10.9.2"
   },
   "dependencies": {
