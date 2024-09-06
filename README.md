@@ -14,7 +14,7 @@ The client archiver will be executed at 10AM and 10PM on weekdays.
 
 ### Client files
 
-Client files are separated into 2 types — full files & patch files, and they're available at [Releases](/releases) page, each zip file is not associated with others and can be unzipped independently.
+Client files are separated into 2 types — full files & patch files, and they're available at [Releases](https://github.com/brownsugar/popkart-client-archive/releases) page, each zip file is not associated with others and can be unzipped independently.
 
 ### Naming rules
 
