@@ -169,14 +169,22 @@ const run = async () => {
           await rm(path)
           if (!localFile.isTcgMode())
             localFile.extracted = true
-          await move(localFile.getDownloadPath(), localFile.getDestinationPath(), {
-            overwrite: true,
-          })
           clearStdoutLastLine()
         })
-        await removeDirectory(tempDir)
         consola.success('Client files extracted.')
       }
+
+      consola.start('Updating client files...')
+      await eachFile('patch', async (i, localFile, patchFile, fileCount) => {
+        consola.log(`Updating file ${i + 1} of ${fileCount}: ${patchFile.path}...`)
+
+        await move(localFile.getDownloadPath(), localFile.getDestinationPath(), {
+          overwrite: true,
+        })
+        clearStdoutLastLine()
+      })
+      await removeDirectory(tempDir)
+      consola.success('Client files updated.')
     }
 
     consola.start('Validating client files...')
