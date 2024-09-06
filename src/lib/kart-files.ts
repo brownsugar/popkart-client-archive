@@ -274,6 +274,7 @@ export class KartTxf {
       .split('\r\n')
       .map(line => {
         const info = line
+          .slice(0, -1)
           .split(':')
           .map(text => {
             const value = isNaN(Number(text))
