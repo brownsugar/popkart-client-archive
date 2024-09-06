@@ -151,6 +151,7 @@ export class TcgPatchFile extends PatchFile {
 class LocalFile {
   path: string
   basename: string
+  size = 0
 
   constructor(
     readonly basePath: string,
@@ -183,7 +184,6 @@ class LocalFile {
 }
 
 export class KartLocalFile extends LocalFile {
-  size = 0
   mtimeMs = 0
   crc = 0
 
@@ -210,7 +210,6 @@ export class KartLocalFile extends LocalFile {
 }
 
 export class TcgLocalFile extends LocalFile {
-  size = 0
   md5 = ''
 
   async loadMeta() {
