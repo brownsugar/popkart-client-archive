@@ -67,11 +67,16 @@ jobs:
       id: date
       with:
         format: 'YYYY-MM-DD'
-    - name: Create Release
+    - name: Create release note
+      if: ${{ steps.check.outputs.endpoint != null }}
+      run: |
+        echo "Release date: ${{ steps.date.outputs.time }}" > release-note.md
+        echo "Instructions: https://kinf.cc/Gz6ni" >> release-note.md
+    - name: Create release
       if: ${{ steps.check.outputs.endpoint != null }}
       uses: ncipollo/release-action@v1
       with:
         tag: 'P${{ steps.check.outputs.version }}'
-        body: 'Release date: ${{ steps.date.outputs.time }}\nInstructions: https://kinf.cc/Gz6ni'
+        bodyFile: 'release-note.md'
         artifacts: 'archives/*.zip'
         makeLatest: true
