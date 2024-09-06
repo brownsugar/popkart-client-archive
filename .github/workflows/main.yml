@@ -72,6 +72,6 @@ jobs:
       uses: ncipollo/release-action@v1
       with:
         tag: 'P${{ steps.check.outputs.version }}'
-        body: 'Release date: ${{ steps.date.outputs.time }}'
+        body: 'Release date: ${{ steps.date.outputs.time }}\nInstructions: https://kinf.cc/Gz6ni'
         artifacts: 'archives/*.zip'
         makeLatest: true
