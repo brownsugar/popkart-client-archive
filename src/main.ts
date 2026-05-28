@@ -202,7 +202,7 @@ const run = async () => {
 
       // Restore file modification time
       if (!patchFile.isTcgMode()) {
-        const { utimes } = require('utimes')
+        const { utimes } = await import('utimes')
         await utimes(localFile.path, {
           mtime: filetimeToUnix(patchFile.dwHighDateTime, patchFile.dwLowDateTime),
         })
