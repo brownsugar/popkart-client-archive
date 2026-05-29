@@ -247,8 +247,12 @@ const run = async () => {
         if (zipSize >= zipChunkSize) {
           const file = zipChunkFiles.pop()
           archive.chunks.push(zipChunkFiles)
-          zipSize = patchFile.size
-          zipChunkFiles = [file]
+          zipSize = 0
+          zipChunkFiles = []
+          if (file) {
+            zipSize = patchFile.size
+            zipChunkFiles = [file]
+          }
         }
         if (i === fileCount - 1)
           archive.chunks.push(zipChunkFiles)
@@ -284,7 +288,7 @@ const run = async () => {
     consola.success('Meta file updated.')
   } catch (e) {
     consola.log(`Done with an error occurred in ${getPerformanceResult()}s.`)
-    setFailed(e)
+    setFailed(e instanceof Error ? e : String(e))
   } finally {
     consola.success(`Done in ${getPerformanceResult()}s.`)
   }
