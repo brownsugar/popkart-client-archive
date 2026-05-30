@@ -19,7 +19,7 @@ const run = async () => {
     const tcgServerEndpoint = process.env.PATCH_SERVER_ENDPOINT
     const kartPatch = new KartPatch()
 
-    let patchInfo: KartPatchServerInfo = null
+    let patchInfo: KartPatchServerInfo | null = null
     if (tcgServerEndpoint) {
       consola.info('Connecting to TCG server...')
       patchInfo = await kartPatch.connectTCGServer(tcgServerEndpoint)
@@ -42,7 +42,7 @@ const run = async () => {
     setOutput('mode', patchInfo.mode)
   } catch (e) {
     consola.log(`Done with an error occurred in ${getPerformanceResult()}s.`)
-    setFailed(e)
+    setFailed(e instanceof Error ? e : String(e))
   } finally {
     consola.success(`Done in ${getPerformanceResult()}s.`)
   }
