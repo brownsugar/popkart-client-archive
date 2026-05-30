@@ -40,7 +40,10 @@ export const generateMd5 = (path: string) => {
     const hash = crypto.createHash('md5')
     const stream = createReadStream(path)
     stream.on('data', data => {
-      hash.update(data)
+      const chunk = typeof data === 'string'
+        ? new TextEncoder().encode(data)
+        : new Uint8Array(data)
+      hash.update(chunk)
     })
     stream.on('end', () => {
       resolve(hash.digest('hex'))
