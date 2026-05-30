@@ -29,7 +29,7 @@ class KartCrc {
           bytesToRead = filesize
 
         const buffer = Buffer.alloc(bytesToRead)
-        const { bytesRead } = await file.read(buffer, 0, bytesToRead)
+        const { bytesRead } = await file.read(new Uint8Array(buffer), 0, bytesToRead)
         if (bytesRead !== bytesToRead)
           throw new Error('[KartCrc] Failed to calculate file CRC.')
 
@@ -114,7 +114,7 @@ class KartCrc {
 
 class PatchFile {
   isTcgMode(): this is TcgPatchFile {
-    return typeof this['md5'] !== 'undefined'
+    return 'md5' in this
   }
 }
 
@@ -163,7 +163,7 @@ class LocalFile {
   }
 
   isTcgMode(): this is TcgLocalFile {
-    return typeof this['md5'] !== 'undefined'
+    return 'md5' in this
   }
 
   getDestinationPath() {
