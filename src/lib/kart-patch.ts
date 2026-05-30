@@ -29,11 +29,10 @@ export default class KartPatch {
   connectSocket(host: string, port: number) {
     return new Promise<KartPatchServerInfo>((resolve, reject) => {
       consola.info('[KartPatchSocket] Connecting to patch server...')
-      let socket = new Socket()
+      let socket: Socket | null = new Socket()
       // socket.setTimeout(10000)
       socket.on('data', data => {
-        const buffer = Buffer.from(data)
-        const reader = new BufferManager(buffer)
+        const reader = new BufferManager(data)
         reader.move(0x0A)
 
         const version = reader.nextShort()
