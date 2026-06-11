@@ -125,7 +125,7 @@ const run = async () => {
       i: number,
       localFile: KartLocalFile | TcgLocalFile,
       patchFile: KartPatchFile | TcgPatchFile,
-      fileCount: number
+      fileCount: number,
     ) => Promise<void>) => {
       const baseFiles = type === 'patch'
         ? patchFiles

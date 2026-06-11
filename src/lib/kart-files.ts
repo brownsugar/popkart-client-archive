@@ -9,7 +9,6 @@ import { Buffer } from 'node:buffer'
 import { generateMd5, resolveUrl } from './utils'
 
 class KartCrc {
-  // eslint-disable-next-line no-useless-constructor
   constructor(
     readonly path: string,
   ) {}
