@@ -28,7 +28,7 @@ class KartCrc {
           bytesToRead = filesize
 
         const buffer = Buffer.alloc(bytesToRead)
-        const { bytesRead } = await file.read(new Uint8Array(buffer), 0, bytesToRead)
+        const { bytesRead } = await file.read(buffer as unknown as Uint8Array, 0, bytesToRead)
         if (bytesRead !== bytesToRead)
           throw new Error('[KartCrc] Failed to calculate file CRC.')
 
