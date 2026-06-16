@@ -2,7 +2,10 @@ import { dirname } from 'node:path'
 import { mkdir, rm } from 'node:fs/promises'
 import { createReadStream, createWriteStream } from 'node:fs'
 import { createGunzip } from 'node:zlib'
+import { pipeline } from 'node:stream/promises'
 import crypto from 'node:crypto'
+
+export type CliArgsMap = Partial<Record<string, string>>
 
 export const resolveUrl = (input: string, base: string) => {
   return input
@@ -24,16 +27,14 @@ export const removeDirectory = (path: string) => {
   })
 }
 
-export const ungzip = (path: string) =>
-  new Promise<void>(resolve => {
-    const src = createReadStream(path)
-    const destination = createWriteStream(path.replace('.gz', ''))
-
-    src
-      .pipe(createGunzip())
-      .pipe(destination)
-    destination.on('close', resolve)
-  })
+export const ungzip = async (path: string) => {
+  const destinationPath = path.replace(/\.gz$/i, '')
+  await pipeline(
+    createReadStream(path),
+    createGunzip(),
+    createWriteStream(destinationPath),
+  )
+}
 
 export const generateMd5 = (path: string) => {
   return new Promise<string>((resolve, reject) => {
@@ -62,7 +63,11 @@ export const filetimeToUnix = (high: number, low: number) => {
   return Number(timestamp)
 }
 
-export const getArgs = () => {
+export const getElapsedSeconds = (startTime: number) => {
+  return ((performance.now() - startTime) / 1000).toFixed(2)
+}
+
+export const getArgs = (): CliArgsMap => {
   const argv = process.argv ?? []
   return argv
     .reduce((result, string) => {
@@ -71,12 +76,46 @@ export const getArgs = () => {
         result[key] = value.join('=')
       }
       return result
-    }, {} as Record<string, string>)
+    }, {} as CliArgsMap)
 }
 
 export const clearStdoutLastLine = () => {
   if (process.stdout.isTTY) {
     process.stdout.moveCursor(0, -1)
     process.stdout.clearLine(1)
+  }
+}
+
+export const concurrentMap = async <T, R>(
+  items: T[],
+  mapper: (item: T, index: number, array: T[]) => Promise<R>,
+  concurrency: number,
+): Promise<R[]> => {
+  const results: R[] = new Array(items.length)
+  let currentIndex = 0
+
+  const worker = async () => {
+    while (currentIndex < items.length) {
+      const index = currentIndex++
+      results[index] = await mapper(items[index], index, items)
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, worker)
+  await Promise.all(workers)
+  return results
+}
+
+export const withRetry = async <T>(
+  fn: () => Promise<T>,
+  retries = 3,
+  delay = 1000,
+): Promise<T> => {
+  try {
+    return await fn()
+  } catch (e) {
+    if (retries <= 0) throw e
+    await new Promise(resolve => setTimeout(resolve, delay))
+    return withRetry(fn, retries - 1, delay * 2)
   }
 }

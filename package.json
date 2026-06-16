@@ -6,6 +6,7 @@
     "start-check": "ts-node src/check.ts",
     "start-main": "ts-node src/main.ts",
     "lint": "eslint . --fix",
+    "lint:types": "tsc --noEmit",
     "postversion": "git push && git push --tags"
   },
   "repository": {
@@ -30,8 +31,8 @@
     "@actions/core": "^2",
     "buffer-reader": "^0.1.0",
     "consola": "^3.4.2",
-    "easydl": "^1.2.0",
     "fs-extra": "^11.3.5",
+    "undici": "^8.4.1",
     "utimes": "^5.2.1",
     "zip-lib": "^1.4.0"
   }
