@@ -1,6 +1,6 @@
 import { consola } from 'consola'
 import { setOutput, setFailed } from '@actions/core'
-import { connectSocket, connectTCGServer } from './lib/kart-patch'
+import { connectKartSocket, connectTCGServer } from './lib/kart-patch'
 import { getOptionalEnv } from './lib/env'
 import { getElapsedSeconds } from './lib/utils'
 import packageJson from '../package.json'
@@ -9,15 +9,29 @@ import meta from '../meta.json'
 import type { KartPatchServerInfo } from './core/types'
 
 const getPatchInfo = async (): Promise<KartPatchServerInfo> => {
-  const tcgServerEndpoint = getOptionalEnv('PATCH_SERVER_ENDPOINT')
+  const tcgServerEndpoint = getOptionalEnv('TCG_SERVER_ENDPOINT')
 
-  if (tcgServerEndpoint) {
-    consola.info('Connecting to TCG server...')
-    return await connectTCGServer(tcgServerEndpoint)
+  try {
+    consola.info('Connecting to Kart socket...')
+    return await connectKartSocket(server.host, server.port)
+  } catch (socketError) {
+    if (!tcgServerEndpoint)
+      throw socketError
+
+    consola.warn('Kart socket connection failed. Falling back to TCG server...')
+    try {
+      return await connectTCGServer(tcgServerEndpoint)
+    } catch (tcgError) {
+      const socketErrorMsg = socketError instanceof Error ? socketError.message : String(socketError)
+      const tcgErrorMsg = tcgError instanceof Error ? tcgError.message : String(tcgError)
+      throw new Error(
+        `Failed to retrieve patch info. Kart socket error: ${socketErrorMsg}; TCG error: ${tcgErrorMsg}`,
+        {
+          cause: tcgError,
+        },
+      )
+    }
   }
-
-  consola.info('Connecting to patch socket...')
-  return await connectSocket(server.host, server.port)
 }
 
 const run = async () => {

@@ -27,9 +27,8 @@ interface TCGPatchInfo {
   gameserver: unknown[]
 }
 
-export const connectSocket = (host: string, port: number): Promise<KartPatchServerInfo> => {
+export const connectKartSocket = (host: string, port: number): Promise<KartPatchServerInfo> => {
   return new Promise<KartPatchServerInfo>((resolve, reject) => {
-    consola.info('[KartPatchSocket] Connecting to patch server...')
     let socket: Socket | null = new Socket()
     socket.setTimeout(SOCKET_TIMEOUT_MS)
 

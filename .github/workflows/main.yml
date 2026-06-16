@@ -29,7 +29,7 @@ jobs:
       id: check
       run: pnpm start-check
       env:
-        PATCH_SERVER_ENDPOINT: ${{ secrets.PATCH_SERVER_ENDPOINT }}
+        TCG_SERVER_ENDPOINT: ${{ secrets.TCG_SERVER_ENDPOINT }}
     - name: Restore or ping cached client files
       uses: actions/cache/restore@v4
       with:
