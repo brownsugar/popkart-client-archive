@@ -57,9 +57,9 @@ export const generateMd5 = (path: string) => {
 
 export const filetimeToUnix = (high: number, low: number) => {
   // Diff between Windows epoch 1601-01-01 00:00:00 & Unix epoch 1970-01-01 00:00:00
-  const diff = BigInt(11644473600000)
-  const filetime = BigInt(high * Math.pow(2, 32) - low) / BigInt(10000)
-  const timestamp = filetime - diff
+  const diff = 11644473600000n
+  const filetime = (BigInt(high >>> 0) << 32n) + BigInt(low >>> 0)
+  const timestamp = filetime / 10000n - diff
   return Number(timestamp)
 }
 
