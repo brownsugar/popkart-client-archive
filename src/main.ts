@@ -30,6 +30,8 @@ const run = async () => {
       // 2. Download missing/changed files
       let downloadNeeded = true
       if (patchFiles.length === clientFiles.length) {
+        consola.info('No client cache found!')
+
         if (downloadedFullClient)
           throw new Error('Patch diff still requires full download after full client refresh.')
 
@@ -65,7 +67,7 @@ const run = async () => {
     }
 
     // 5. Update meta
-    consola.start('Updating meta file...')
+    consola.start('Start updating meta file...')
     meta.id = patchInfo.id
     meta.version = patchInfo.version
     meta.timestamp = Date.now()

@@ -2,10 +2,9 @@ import { resolve } from 'node:path'
 import { rm } from 'node:fs/promises'
 import { createWriteStream } from 'node:fs'
 import { consola } from 'consola'
-import { stream } from 'undici'
+import { request, stream } from 'undici'
 import { extract } from 'zip-lib'
 import { move } from 'fs-extra'
-import { getRequiredEnv } from '../lib/env'
 import { createDirectory, clearStdoutLastLine, resolveUrl, removeDirectory, ungzip, concurrentMap, withRetry } from '../lib/utils'
 import type { ClientFilePair, KartPatchServerInfo } from './types'
 
@@ -13,6 +12,16 @@ const DOWNLOAD_RETRY_COUNT = 5
 const DOWNLOAD_CONCURRENCY = 10
 const EXTRACT_CONCURRENCY = 20
 const UPDATE_CONCURRENCY = 20
+const FULL_CLIENT_RELEASE_API_URL = 'https://api.github.com/repos/brownsugar/popkart-client-archive/releases/latest'
+
+interface GithubReleaseAsset {
+  name?: string
+  browser_download_url?: string
+}
+
+interface GithubReleaseResponse {
+  assets?: GithubReleaseAsset[]
+}
 
 const downloadFile = async (url: string, destPath: string): Promise<void> => {
   try {
@@ -34,20 +43,52 @@ const downloadFile = async (url: string, destPath: string): Promise<void> => {
 }
 
 export const downloadFullClient = async (clientDir: string): Promise<void> => {
-  consola.info('No client cache found!')
-  consola.start('Start downloading full client...')
-  const clientArchiveUrl = getRequiredEnv('CLIENT_ARCHIVE_URL')
+  consola.start('Start fetching latest full client release assets...')
+  const response = await request(FULL_CLIENT_RELEASE_API_URL, {
+    method: 'GET',
+    headers: {
+      accept: 'application/vnd.github+json',
+      'user-agent': 'popkart-client-archiver',
+    },
+  })
+
+  if (response.statusCode < 200 || response.statusCode >= 300)
+    throw new Error(`Failed to fetch latest release metadata with status ${response.statusCode}`)
+
+  const release = await response.body.json() as GithubReleaseResponse
+  const archives = (release.assets ?? [])
+    .filter(asset => asset.name?.startsWith('PopKart_Client') && asset.name.toLowerCase().endsWith('.zip'))
+    .map(asset => ({
+      name: asset.name as string,
+      url: asset.browser_download_url,
+    }))
+    .filter(asset => !!asset.url)
+
+  if (archives.length === 0)
+    throw new Error('No matching full client archives found in latest release assets.')
+
+  consola.success(`Found ${archives.length} full client archive(s).`)
 
   const rootDir = process.cwd()
-  const clientArchivePath = resolve(rootDir, 'PopKart_Client.zip')
+  const tempArchiveDir = resolve(rootDir, 'client', 'temp_full_client')
+  await removeDirectory(tempArchiveDir)
 
-  await downloadFile(clientArchiveUrl, clientArchivePath)
-  consola.success('Full client downloaded.')
+  for (let index = 0; index < archives.length; index++) {
+    const archive = archives[index]
+    const archivePath = resolve(tempArchiveDir, archive.name)
 
-  consola.start('Start extracting full client...')
-  await extract(clientArchivePath, clientDir)
+    consola.start(`Start downloading full client archive ${index + 1} of ${archives.length}: ${archive.name}...`)
+    await createDirectory(archivePath)
+    await downloadFile(archive.url as string, archivePath)
+    consola.success(`Downloaded ${archive.name}.`)
 
-  consola.success('Full client extracted.')
+    consola.start(`Start extracting full client archive ${index + 1} of ${archives.length}: ${archive.name}...`)
+    await extract(archivePath, clientDir)
+    consola.success(`Extracted ${archive.name}.`)
+  }
+  await removeDirectory(tempArchiveDir)
+
+  consola.success('All full client archives downloaded and extracted.')
 }
 
 export const downloadPatchFiles = async (
