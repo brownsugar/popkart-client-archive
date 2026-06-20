@@ -1,13 +1,14 @@
 import { resolve } from 'node:path'
 import { consola } from 'consola'
-import { loadKartNfo2, loadTcgTxf, KartLocalFile, TcgLocalFile, KartPatchFile, TcgPatchFile } from '../lib/kart-files'
+import { loadKartNfo2, loadTcgTxf } from '../lib/kart-manifest'
+import { KartLocalFile, TcgLocalFile, KartPatchFile, TcgPatchFile } from '../lib/kart-files'
 import { resolveUrl } from '../lib/utils'
 import type { KartPatchServerInfo, PatchDiff, ClientFilePair } from './types'
 
-export const getFileHash = (localFile: KartLocalFile | TcgLocalFile, patchFile: KartPatchFile | TcgPatchFile) => {
+export const getFileHash = (localFile: KartLocalFile | TcgLocalFile, remoteFile: KartPatchFile | TcgPatchFile) => {
   const local = localFile.isTcgMode() ? localFile.md5 : localFile.crc
-  const patch = patchFile.isTcgMode() ? patchFile.md5 : patchFile.crc
-  return { local, patch }
+  const remote = remoteFile.isTcgMode() ? remoteFile.md5 : remoteFile.crc
+  return { local, remote }
 }
 
 export const getPatchDiff = async (patchInfo: KartPatchServerInfo): Promise<PatchDiff> => {
@@ -41,7 +42,7 @@ export const getPatchDiff = async (patchInfo: KartPatchServerInfo): Promise<Patc
   for (const { localFile, remoteFile } of clientFiles) {
     const succeed = await localFile.loadMeta()
     const hash = getFileHash(localFile, remoteFile)
-    if (succeed && hash.local === hash.patch) continue
+    if (succeed && hash.local === hash.remote) continue
     patchFiles.push({ localFile, remoteFile })
   }
   consola.success(`Client files filtered. (${patchFiles.length} files to download)`)

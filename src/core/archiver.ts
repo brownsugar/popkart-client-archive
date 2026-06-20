@@ -9,7 +9,7 @@ const ZIP_CHUNK_SIZE_BYTES = 2 * 1024 * 1024 * 1024 // 2GB
 
 interface ChunkFile {
   srcPath: string
-  filePath: string
+  metaPath: string
 }
 
 export const archiveClientFiles = async (
@@ -41,7 +41,7 @@ export const archiveClientFiles = async (
       const { localFile, remoteFile } = files[i]
       currentChunk.push({
         srcPath: localFile.path,
-        filePath: remoteFile.path,
+        metaPath: remoteFile.path,
       })
       currentSize += remoteFile.size
 
@@ -74,7 +74,7 @@ export const archiveClientFiles = async (
 
       const zip = new Zip()
       chunkFiles.forEach(file => {
-        zip.addFile(file.srcPath, file.filePath)
+        zip.addFile(file.srcPath, file.metaPath)
       })
       await zip.archive(destPath)
     }

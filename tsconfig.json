@@ -1,7 +1,14 @@
-{
+﻿{
   "compilerOptions": {
+    "module": "NodeNext",
+    "esModuleInterop": true,
     "resolveJsonModule": true,
-    "esModuleInterop": true
+    "moduleResolution": "NodeNext",
+    "target": "ESNext",
+    "skipLibCheck": true
   },
-  "include": ["src"]
+  "include": [
+    "src",
+    "tests"
+  ]
 }

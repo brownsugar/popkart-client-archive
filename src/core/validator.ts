@@ -27,7 +27,7 @@ export const validateClientFiles = async (clientFiles: ClientFilePair[]): Promis
     // Check file hash
     await localFile.loadMeta()
     const hash = getFileHash(localFile, remoteFile)
-    if (hash.local !== hash.patch) {
+    if (hash.local !== hash.remote) {
       invalidFiles.push(filePair)
       await rm(localFile.path, { force: true }) // Delete corrupted file
       clearStdoutLastLine()
