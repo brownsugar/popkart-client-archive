@@ -20,7 +20,7 @@
     "url": "https://github.com/brownsugar/popkart-client-archive/issues"
   },
   "homepage": "https://github.com/brownsugar/popkart-client-archive#readme",
-  "packageManager": "pnpm@11.5.3",
+  "packageManager": "pnpm@11.8.0",
   "devDependencies": {
     "@brownsugar/eslint-config": "^4.0.3",
     "@types/buffer-reader": "^0.1.3",
