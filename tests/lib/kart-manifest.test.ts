@@ -41,7 +41,7 @@ describe('kart-manifest', () => {
     it('should throw an error on invalid NFO2 header', async () => {
       fetchMocker.mockResponseOnce('INVALID HEADER\n"fake","fake"')
 
-      await expect(loadKartNfo2('http://kartupdate.tiancity.cn')).rejects.toThrow(/\[KartFiles\]\[NFO2\] Invalid nfo2 file/)
+      await expect(loadKartNfo2('http://kartupdate.tiancity.cn')).rejects.toThrow(/\[KartManifest\]\[NFO2\] Invalid nfo2 file/)
     })
 
     it('should throw an error when NFO2 fetch returns non-OK status', async () => {
@@ -52,7 +52,7 @@ describe('kart-manifest', () => {
       } as Response)
 
       try {
-        await expect(loadKartNfo2('http://kartupdate.tiancity.cn')).rejects.toThrow(/\[KartFiles\]\[NFO2\] Failed to fetch nfo2 file: 404 Not Found/)
+        await expect(loadKartNfo2('http://kartupdate.tiancity.cn')).rejects.toThrow(/\[KartManifest\]\[NFO2\] Failed to fetch nfo2 file: 404 Not Found/)
       } finally {
         fetchSpy.mockRestore()
       }
@@ -78,7 +78,7 @@ describe('kart-manifest', () => {
 
     it('should throw an error on invalid TXF content', async () => {
       fetchMocker.mockResponseOnce('Invalid Content\nNo colons here')
-      await expect(loadTcgTxf('http://kartupdate.tiancity.cn')).rejects.toThrow(/\[KartFiles\]\[TXF\] Invalid txf file/)
+      await expect(loadTcgTxf('http://kartupdate.tiancity.cn')).rejects.toThrow(/\[KartManifest\]\[TXF\] Invalid txf file/)
     })
 
     it('should throw an error when TXF fetch returns non-OK status', async () => {
@@ -89,7 +89,7 @@ describe('kart-manifest', () => {
       } as Response)
 
       try {
-        await expect(loadTcgTxf('http://kartupdate.tiancity.cn')).rejects.toThrow(/\[KartFiles\]\[TXF\] Failed to fetch txf file: 500 Server Error/)
+        await expect(loadTcgTxf('http://kartupdate.tiancity.cn')).rejects.toThrow(/\[KartManifest\]\[TXF\] Failed to fetch txf file: 500 Server Error/)
       } finally {
         fetchSpy.mockRestore()
       }

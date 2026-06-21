@@ -8,11 +8,11 @@ export const loadKartNfo2 = async (endpoint: string): Promise<KartPatchFile[]> =
 
   const response = await fetch(url)
   if (!response.ok)
-    throw new Error(`[KartFiles][NFO2] Failed to fetch nfo2 file: ${response.status} ${response.statusText}`)
+    throw new Error(`[KartManifest][NFO2] Failed to fetch nfo2 file: ${response.status} ${response.statusText}`)
 
   const data = await response.text()
   if (!data.startsWith('NFO200'))
-    throw new Error('[KartFiles][NFO2] Invalid nfo2 file.\n' + data)
+    throw new Error('[KartManifest][NFO2] Invalid nfo2 file.\n' + data)
 
   return data
     .trim()
@@ -38,11 +38,11 @@ export const loadTcgTxf = async (endpoint: string): Promise<TcgPatchFile[]> => {
 
   const response = await fetch(url)
   if (!response.ok)
-    throw new Error(`[KartFiles][TXF] Failed to fetch txf file: ${response.status} ${response.statusText}`)
+    throw new Error(`[KartManifest][TXF] Failed to fetch txf file: ${response.status} ${response.statusText}`)
 
   const data = await response.text()
   if (!data.includes(':\\'))
-    throw new Error('[KartFiles][TXF] Invalid txf file.\n' + data)
+    throw new Error('[KartManifest][TXF] Invalid txf file.\n' + data)
 
   return data
     .trim()
