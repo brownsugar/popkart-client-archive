@@ -1,4 +1,3 @@
-import { resolve } from 'node:path'
 import { writeFile } from 'node:fs/promises'
 import { consola } from 'consola'
 import { setOutput, setFailed } from '@actions/core'
@@ -8,6 +7,7 @@ import { validateClientFiles } from './core/validator'
 import { archiveClientFiles } from './core/archiver'
 import { getArgs, getElapsedSeconds } from './lib/utils'
 import { parseCliArgs } from './core/cli'
+import { resolveClientDir, resolveMetaPath } from './lib/paths'
 import packageJson from '../package.json'
 import meta from '../meta.json'
 
@@ -36,7 +36,7 @@ const run = async () => {
         if (downloadedFullClient)
           throw new Error('Patch diff still requires full download after full client refresh.')
 
-        const clientDir = resolve(process.cwd(), 'client')
+        const clientDir = resolveClientDir()
         await downloadFullClient(clientDir)
         downloadedFullClient = true
         consola.success('Full client downloaded and extracted. Recomputing patch diff...')
@@ -79,7 +79,7 @@ const run = async () => {
       meta.id = patchInfo.id
       meta.version = patchInfo.version
       meta.timestamp = Date.now()
-      const metaPath = resolve(process.cwd(), 'meta.json')
+      const metaPath = resolveMetaPath()
       await writeFile(metaPath, JSON.stringify(meta, null, 2), { flag: 'w' })
       consola.success('Meta file updated.')
     }

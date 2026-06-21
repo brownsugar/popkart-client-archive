@@ -5,6 +5,7 @@ import { request, stream } from 'undici'
 import { extract } from 'zip-lib'
 import { move } from 'fs-extra'
 import { downloadFullClient, downloadPatchFiles } from '../../src/core/downloader'
+import { resolveClientDir, resolveClientFullTempDir, resolveClientTempDir } from '../../src/lib/paths'
 import { resolve } from 'node:path'
 import { rm, mkdir } from 'node:fs/promises'
 
@@ -41,8 +42,8 @@ vi.mock('fs-extra', () => ({
 }))
 
 describe('core/downloader', () => {
-  const tempDir = resolve(process.cwd(), 'client', 'temp')
-  const fullClientTempDir = resolve(process.cwd(), 'client', 'temp_full_client')
+  const tempDir = resolveClientTempDir()
+  const fullClientTempDir = resolveClientFullTempDir()
 
   beforeEach(async () => {
     mockReleaseStatusCode = 200
@@ -71,14 +72,14 @@ describe('core/downloader', () => {
   })
 
   it('should throw when latest release metadata request fails', async () => {
-    const clientDir = resolve(process.cwd(), 'client')
+    const clientDir = resolveClientDir()
     mockReleaseStatusCode = 500
 
     await expect(downloadFullClient(clientDir)).rejects.toThrow('Failed to fetch latest release metadata with status 500')
   })
 
   it('should throw when latest release has no matching archives', async () => {
-    const clientDir = resolve(process.cwd(), 'client')
+    const clientDir = resolveClientDir()
     mockReleaseAssets = [
       { name: 'readme.txt', browser_download_url: 'http://mock/readme.txt' },
       { name: 'PopKart_Client.tar.gz', browser_download_url: 'http://mock/PopKart_Client.tar.gz' },
@@ -88,7 +89,7 @@ describe('core/downloader', () => {
   })
 
   it('should download and extract all PopKart_Client zip assets from latest release', async () => {
-    const clientDir = resolve(process.cwd(), 'client')
+    const clientDir = resolveClientDir()
     mockReleaseAssets = [
       { name: 'PopKart_Client_1.zip', browser_download_url: 'http://mock/PopKart_Client_1.zip' },
       { name: 'PopKart_Client_2.ZIP', browser_download_url: 'http://mock/PopKart_Client_2.ZIP' },
@@ -104,7 +105,7 @@ describe('core/downloader', () => {
   })
 
   it('should fail fast on non-2xx archive download responses', async () => {
-    const clientDir = resolve(process.cwd(), 'client')
+    const clientDir = resolveClientDir()
     mockReleaseAssets = [
       { name: 'PopKart_Client.zip', browser_download_url: 'http://mock/404.zip' },
     ]
@@ -117,7 +118,7 @@ describe('core/downloader', () => {
       localFile: {
         getDownloadPath: () => resolve(tempDir, 'Data', 'test.rho'),
         getRawFilePath: () => 'Data/test.rho',
-        getDestinationPath: () => resolve(process.cwd(), 'client', 'Data', 'test.rho'),
+        getDestinationPath: () => resolve(resolveClientDir(), 'Data', 'test.rho'),
         isTcgMode: () => true,
       },
       remoteFile: {

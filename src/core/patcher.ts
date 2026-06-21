@@ -4,6 +4,7 @@ import { consola } from 'consola'
 import { loadKartNfo2, loadTcgTxf } from '../lib/kart-manifest'
 import { KartLocalFile, TcgLocalFile, KartPatchFile, TcgPatchFile } from '../lib/kart-files'
 import { resolveUrl } from '../lib/utils'
+import { resolveClientDir, resolveClientTempDir } from '../lib/paths'
 import type { KartPatchServerInfo, PatchDiff, ClientFilePair } from './types'
 import meta from '../../meta.json'
 
@@ -12,7 +13,7 @@ export const removeRemovedClientFiles = async (removedFiles: string[]) => {
     return
 
   consola.start(`Start removing ${removedFiles.length} obsolete local files...`)
-  const clientDir = resolve(process.cwd(), 'client')
+  const clientDir = resolveClientDir()
 
   for (const filePath of removedFiles)
     await rm(resolve(clientDir, filePath), { force: true })
@@ -51,9 +52,8 @@ export const getPatchDiff = async (patchInfo: KartPatchServerInfo): Promise<Patc
   const remoteFileList = currentManifest.remoteFileList
   const previousRemoteFileList = previousManifest.remoteFileList
 
-  const rootDir = process.cwd()
-  const clientDir = resolve(rootDir, 'client')
-  const tempDir = resolve(clientDir, 'temp')
+  const clientDir = resolveClientDir()
+  const tempDir = resolveClientTempDir()
 
   const clientFiles: ClientFilePair[] = remoteFileList.map((remoteFile: KartPatchFile | TcgPatchFile) => ({
     localFile: patchInfo.mode === 'tcg'

@@ -2,6 +2,7 @@ import { resolve } from 'node:path'
 import { consola } from 'consola'
 import { Zip } from 'zip-lib'
 import { removeDirectory } from '../lib/utils'
+import { resolveArchivesDir } from '../lib/paths'
 import type { ClientFilePair, KartPatchServerInfo } from './types'
 import meta from '../../meta.json'
 
@@ -19,8 +20,7 @@ export const archiveClientFiles = async (
 ): Promise<void> => {
   consola.start('Start archiving client files...')
 
-  const rootDir = process.cwd()
-  const archivesPath = resolve(rootDir, 'archives')
+  const archivesPath = resolveArchivesDir()
   await removeDirectory(archivesPath)
 
   const archiveSet = [

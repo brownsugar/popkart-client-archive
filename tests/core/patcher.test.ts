@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { rm } from 'node:fs/promises'
 import { getPatchDiff, removeRemovedClientFiles } from '../../src/core/patcher'
 import { loadKartNfo2, loadTcgTxf } from '../../src/lib/kart-manifest'
+import { DIR_NAMES } from '../../src/lib/paths'
 
 vi.mock('node:fs/promises', () => ({
   rm: vi.fn(),
@@ -75,8 +76,8 @@ describe('core/patcher', () => {
     await removeRemovedClientFiles(removedFiles)
 
     expect(rm).toHaveBeenCalledTimes(2)
-    expect(rm).toHaveBeenNthCalledWith(1, expect.stringContaining('client'), { force: true })
-    expect(rm).toHaveBeenNthCalledWith(2, expect.stringContaining('client'), { force: true })
+    expect(rm).toHaveBeenNthCalledWith(1, expect.stringContaining(DIR_NAMES.client), { force: true })
+    expect(rm).toHaveBeenNthCalledWith(2, expect.stringContaining(DIR_NAMES.client), { force: true })
   })
 
   it('getPatchDiff should diff tcg manifests by patch id endpoint', async () => {

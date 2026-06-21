@@ -6,6 +6,7 @@ import { request, stream } from 'undici'
 import { extract } from 'zip-lib'
 import { move } from 'fs-extra'
 import { createDirectory, clearStdoutLastLine, resolveUrl, removeDirectory, ungzip, concurrentMap, withRetry } from '../lib/utils'
+import { resolveClientFullTempDir, resolveClientTempDir } from '../lib/paths'
 import type { ClientFilePair, KartPatchServerInfo } from './types'
 
 const DOWNLOAD_RETRY_COUNT = 5
@@ -69,8 +70,7 @@ export const downloadFullClient = async (clientDir: string): Promise<void> => {
 
   consola.success(`Found ${archives.length} full client archive(s).`)
 
-  const rootDir = process.cwd()
-  const tempArchiveDir = resolve(rootDir, 'client', 'temp_full_client')
+  const tempArchiveDir = resolveClientFullTempDir()
   await removeDirectory(tempArchiveDir)
 
   for (let index = 0; index < archives.length; index++) {
@@ -101,8 +101,7 @@ export const downloadPatchFiles = async (
     return
   }
 
-  const rootDir = process.cwd()
-  const tempDir = resolve(rootDir, 'client', 'temp')
+  const tempDir = resolveClientTempDir()
 
   consola.start('Start downloading client files...')
   await removeDirectory(tempDir)
