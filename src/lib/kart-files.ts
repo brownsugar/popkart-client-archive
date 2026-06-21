@@ -108,10 +108,12 @@ export const calculateKartCrc = async (path: string) => {
   }
 }
 
-class PatchFile {
+abstract class PatchFile {
   isTcgMode(): this is TcgPatchFile {
     return 'md5' in this
   }
+
+  abstract getFileHash(): string | number
 }
 
 export class KartPatchFile extends PatchFile {
@@ -131,6 +133,10 @@ export class KartPatchFile extends PatchFile {
   ) {
     super()
   }
+
+  getFileHash(): number {
+    return this.crc
+  }
 }
 
 export class TcgPatchFile extends PatchFile {
@@ -142,9 +148,13 @@ export class TcgPatchFile extends PatchFile {
   ) {
     super()
   }
+
+  getFileHash(): string {
+    return this.md5
+  }
 }
 
-class LocalFile {
+abstract class LocalFile {
   path: string
   basename: string
   size = 0
@@ -177,6 +187,8 @@ class LocalFile {
   getRawFileExt() {
     return ''
   }
+
+  abstract getFileHash(): string | number
 }
 
 export class KartLocalFile extends LocalFile {
@@ -202,6 +214,10 @@ export class KartLocalFile extends LocalFile {
       ? this.extracted ? '' : '.gz'
       : `.${this.target}`
   }
+
+  getFileHash(): number {
+    return this.crc
+  }
 }
 
 export class TcgLocalFile extends LocalFile {
@@ -215,5 +231,9 @@ export class TcgLocalFile extends LocalFile {
     this.size = stat.size
     this.md5 = await generateMd5(this.path)
     return true
+  }
+
+  getFileHash(): string {
+    return this.md5
   }
 }

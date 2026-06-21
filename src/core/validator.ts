@@ -2,7 +2,6 @@ import { existsSync } from 'node:fs'
 import { rm } from 'node:fs/promises'
 import { consola } from 'consola'
 import { clearStdoutLastLine, filetimeToUnix, concurrentMap } from '../lib/utils'
-import { getFileHash } from './patcher'
 import type { ClientFilePair } from './types'
 
 const VALIDATION_CONCURRENCY = 20
@@ -26,8 +25,9 @@ export const validateClientFiles = async (clientFiles: ClientFilePair[]): Promis
 
     // Check file hash
     await localFile.loadMeta()
-    const hash = getFileHash(localFile, remoteFile)
-    if (hash.local !== hash.remote) {
+    const localHash = localFile.getFileHash()
+    const remoteHash = remoteFile.getFileHash()
+    if (localHash !== remoteHash) {
       invalidFiles.push(filePair)
       await rm(localFile.path, { force: true }) // Delete corrupted file
       clearStdoutLastLine()

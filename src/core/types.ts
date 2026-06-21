@@ -9,6 +9,9 @@ export interface ClientFilePair {
 export interface PatchDiff {
   clientFiles: ClientFilePair[]
   patchFiles: ClientFilePair[]
+  newFiles: string[]
+  changedFiles: string[]
+  removedFiles: string[]
   remoteBaseUrl: string
 }
 

@@ -3,7 +3,6 @@ import { existsSync } from 'node:fs'
 import { rm } from 'node:fs/promises'
 import { utimes } from 'utimes'
 import { validateClientFiles } from '../../src/core/validator'
-import * as patcher from '../../src/core/patcher'
 
 vi.mock('node:fs', () => ({
   existsSync: vi.fn(),
@@ -41,10 +40,12 @@ describe('core/validator', () => {
     const filePair = {
       localFile: {
         path: 'client/missing.bin',
+        getFileHash: () => 'x',
         loadMeta: vi.fn(),
       },
       remoteFile: {
         path: 'missing.bin',
+        getFileHash: () => 'x',
         isTcgMode: () => true,
       },
     }
@@ -57,15 +58,19 @@ describe('core/validator', () => {
 
   it('should remove corrupted files on hash mismatch', async () => {
     vi.mocked(existsSync).mockReturnValue(true)
-    vi.spyOn(patcher, 'getFileHash').mockReturnValue({ local: 'a', remote: 'b' })
 
     const filePair = {
       localFile: {
         path: 'client/corrupt.bin',
+        isTcgMode: () => true,
+        md5: 'a',
+        getFileHash: () => 'a',
         loadMeta: vi.fn().mockResolvedValue(true),
       },
       remoteFile: {
         path: 'corrupt.bin',
+        md5: 'b',
+        getFileHash: () => 'b',
         isTcgMode: () => true,
       },
     }
@@ -78,15 +83,19 @@ describe('core/validator', () => {
 
   it('should restore mtime for valid non-tcg files', async () => {
     vi.mocked(existsSync).mockReturnValue(true)
-    vi.spyOn(patcher, 'getFileHash').mockReturnValue({ local: 1, remote: 1 })
 
     const filePair = {
       localFile: {
         path: 'client/ok.bin',
+        isTcgMode: () => false,
+        crc: 1,
+        getFileHash: () => 1,
         loadMeta: vi.fn().mockResolvedValue(true),
       },
       remoteFile: {
         path: 'ok.bin',
+        crc: 1,
+        getFileHash: () => 1,
         isTcgMode: () => false,
         dwHighDateTime: 1,
         dwLowDateTime: 2,
