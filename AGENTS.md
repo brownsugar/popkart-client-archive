@@ -263,7 +263,6 @@ When modifying behavior in `src/core/*` or `src/lib/*`, update tests in `tests/c
 
 ## 11. Known Notes and Risks
 
-- README states MIT license metadata while `LICENSE` file is GPLv3 text. Clarify licensing intent before making policy-sensitive changes.
 - Runtime depends on external endpoints and release assets; keep error messages clear and actionable.
 - `client/` and archive operations can be large; avoid unnecessary full-directory operations in new code.
 
