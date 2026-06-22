@@ -24,56 +24,42 @@ const run = async () => {
     const patchInfo = parseCliArgs(getArgs())
     consola.success('Patch info retrieved.\n', patchInfo)
 
-    let downloadedFullClient = false
-    while (true) {
-      // 1. Get diff
-      const { clientFiles, patchFiles, removedFiles, remoteBaseUrl } = await getPatchDiff(patchInfo)
+    // 1. Get diff
+    const { clientFiles, patchFiles, removedFiles, remoteBaseUrl } = await getPatchDiff(patchInfo)
 
-      // 2. Download missing/changed files
-      const downloadNeeded = patchFiles.length > 0
-      if (patchFiles.length === clientFiles.length) {
-        consola.info('No client cache found!')
+    // 2. Download missing/changed files
+    const downloadNeeded = patchFiles.length > 0
+    if (!downloadNeeded)
+      consola.info('Nothing to download.')
 
-        const clientDir = resolveClientDir()
+    if (patchFiles.length === 0 && removedFiles.length === 0)
+      setOutput('noClientCache', true)
 
-        if (!downloadedFullClient) {
-          await downloadFullClient(clientDir)
-          downloadedFullClient = true
-          consola.success('Full client downloaded and extracted. Recomputing patch diff...')
-          continue
-        }
+    if (downloadNeeded)
+      await downloadPatchFiles(patchFiles, remoteBaseUrl, patchInfo)
 
-        if (downloadedFullClient)
-          throw new Error('Patch diff still requires full download after full client refresh.')
-      }
+    await removeRemovedClientFiles(removedFiles)
 
-      if (!downloadNeeded)
-        consola.info('Nothing to download.')
-
-      if (patchFiles.length === 0 && removedFiles.length === 0)
-        setOutput('noClientCache', true)
-
-      if (downloadNeeded)
-        await downloadPatchFiles(patchFiles, remoteBaseUrl, patchInfo)
-
-      await removeRemovedClientFiles(removedFiles)
-
-      // 3. Validate files
-      let invalidFiles = await validateClientFiles(clientFiles)
-      if (invalidFiles.length > 0) {
-        consola.info(`Attempting to re-download ${invalidFiles.length} corrupted files...`)
-        await downloadPatchFiles(invalidFiles, remoteBaseUrl, patchInfo)
-        invalidFiles = await validateClientFiles(invalidFiles)
-        if (invalidFiles.length > 0)
-          throw new Error(`Validation failed for ${invalidFiles.length} files after retrying.`)
-      }
-
-      // 4. Archive files
-      if (downloadNeeded)
-        await archiveClientFiles(clientFiles, patchFiles, patchInfo)
-
-      break
+    // 3. Validate files
+    let invalidFiles = await validateClientFiles(clientFiles)
+    if (invalidFiles.length === clientFiles.length) {
+      consola.info('No valid local client files found. Downloading full client...')
+      const clientDir = resolveClientDir()
+      await downloadFullClient(clientDir)
+      invalidFiles = await validateClientFiles(clientFiles)
     }
+
+    if (invalidFiles.length > 0) {
+      consola.info(`Attempting to re-download ${invalidFiles.length} corrupted files...`)
+      await downloadPatchFiles(invalidFiles, remoteBaseUrl, patchInfo)
+      invalidFiles = await validateClientFiles(invalidFiles)
+      if (invalidFiles.length > 0)
+        throw new Error(`Validation failed for ${invalidFiles.length} files after retrying.`)
+    }
+
+    // 4. Archive files
+    if (downloadNeeded)
+      await archiveClientFiles(clientFiles, patchFiles, patchInfo)
 
     // 5. Build full client cache dir
     consola.start('Start building cache dir from full client archives...')

@@ -134,7 +134,7 @@ describe('main entrypoint argument validation', () => {
     })
   })
 
-  it('should download full client and recompute diff when all files are missing', async () => {
+  it('should download full client when validation marks all files invalid', async () => {
     process.argv = [
       'node',
       'src/main.ts',
@@ -144,33 +144,25 @@ describe('main entrypoint argument validation', () => {
       '--mode=kart',
     ]
 
-    vi.mocked(getPatchDiff)
-      .mockResolvedValueOnce(makePatchDiff({
-        clientFiles: [
-          makeClientFilePair('Data/a.rho'),
-          makeClientFilePair('Data/b.rho'),
-        ],
-        patchFiles: [
-          makeClientFilePair('Data/a.rho'),
-          makeClientFilePair('Data/b.rho'),
-        ],
-        newFiles: ['Data/a.rho', 'Data/b.rho'],
-      }))
-      .mockResolvedValueOnce(makePatchDiff({
-        clientFiles: [
-          makeClientFilePair('Data/a.rho'),
-          makeClientFilePair('Data/b.rho'),
-        ],
-        patchFiles: [],
-      }))
+    const clientFiles = [
+      makeClientFilePair('Data/a.rho'),
+      makeClientFilePair('Data/b.rho'),
+    ]
 
-    vi.mocked(validateClientFiles).mockResolvedValue([])
+    vi.mocked(getPatchDiff).mockResolvedValue(makePatchDiff({
+      clientFiles,
+      patchFiles: [],
+    }))
+    vi.mocked(validateClientFiles)
+      .mockResolvedValueOnce(clientFiles)
+      .mockResolvedValueOnce([])
 
     await import('../../src/main.js')
 
     await vi.waitFor(() => {
       expect(downloadFullClient).toHaveBeenCalledTimes(1)
-      expect(getPatchDiff).toHaveBeenCalledTimes(2)
+      expect(getPatchDiff).toHaveBeenCalledTimes(1)
+      expect(validateClientFiles).toHaveBeenCalledTimes(2)
       expect(removeRemovedClientFiles).toHaveBeenCalledWith([])
       expect(downloadPatchFiles).not.toHaveBeenCalled()
       expect(archiveClientFiles).not.toHaveBeenCalled()
