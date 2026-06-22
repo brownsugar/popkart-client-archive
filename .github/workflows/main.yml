@@ -46,12 +46,18 @@ jobs:
       env:
         TCG_SERVER_ENDPOINT: ${{ secrets.TCG_SERVER_ENDPOINT }}
 
-    - name: Restore or ping cached client files
+    - name: Restore or ping cached full client zips
       uses: actions/cache/restore@v5
       with:
-        key: client
-        path: client
+        key: full-client-${{ github.run_id }}
+        restore-keys: |
+          full-client-
+        path: cache
         lookup-only: ${{ steps.check.outputs.endpoint == '' }}
+
+    - name: Extract cached full client zips to client
+      if: ${{ steps.check.outputs.endpoint != '' }}
+      run: pnpm restore-cache
 
     - name: Start client archiving
       id: archive
@@ -62,15 +68,13 @@ jobs:
         --id=${{ steps.check.outputs.id }} `
         --version=${{ steps.check.outputs.version }} `
         --mode=${{ steps.check.outputs.mode }}
-      env:
-        CLIENT_ARCHIVE_URL: ${{ secrets.CLIENT_ARCHIVE_URL }}
 
-    - name: Save client files to cache
-      if: ${{ steps.check.outputs.endpoint != '' && steps.archive.outputs.noClientCache != 'true'}}
+    - name: Save full client to cache
+      if: ${{ steps.check.outputs.endpoint != '' && steps.archive.outputs.noClientCache != 'true' && steps.archive.outputs.noFullClientCache != 'true'}}
       uses: actions/cache/save@v5
       with:
-        key: client
-        path: client
+        key: full-client-${{ github.run_id }}
+        path: cache
 
     - name: Commit meta.json and create a new tag
       if: ${{ steps.check.outputs.endpoint != '' }}

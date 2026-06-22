@@ -1,6 +1,7 @@
 import { resolve } from 'node:path'
 
 export const DIR_NAMES = {
+  cache: 'cache',
   client: 'client',
   archives: 'archives',
   temp: 'temp',
@@ -10,6 +11,8 @@ export const DIR_NAMES = {
 export const FILE_NAMES = {
   meta: 'meta.json',
 } as const
+
+export const resolveCacheDir = (): string => resolve(process.cwd(), DIR_NAMES.cache)
 
 export const resolveClientDir = (): string => resolve(process.cwd(), DIR_NAMES.client)
 

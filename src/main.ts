@@ -5,6 +5,7 @@ import { getPatchDiff, removeRemovedClientFiles } from './core/patcher'
 import { downloadFullClient, downloadPatchFiles } from './core/downloader'
 import { validateClientFiles } from './core/validator'
 import { archiveClientFiles } from './core/archiver'
+import { buildFromArchives } from './core/cache'
 import { getArgs, getElapsedSeconds } from './lib/utils'
 import { parseCliArgs } from './core/cli'
 import { resolveClientDir, resolveMetaPath } from './lib/paths'
@@ -33,14 +34,17 @@ const run = async () => {
       if (patchFiles.length === clientFiles.length) {
         consola.info('No client cache found!')
 
+        const clientDir = resolveClientDir()
+
+        if (!downloadedFullClient) {
+          await downloadFullClient(clientDir)
+          downloadedFullClient = true
+          consola.success('Full client downloaded and extracted. Recomputing patch diff...')
+          continue
+        }
+
         if (downloadedFullClient)
           throw new Error('Patch diff still requires full download after full client refresh.')
-
-        const clientDir = resolveClientDir()
-        await downloadFullClient(clientDir)
-        downloadedFullClient = true
-        consola.success('Full client downloaded and extracted. Recomputing patch diff...')
-        continue
       }
 
       if (!downloadNeeded)
@@ -71,7 +75,20 @@ const run = async () => {
       break
     }
 
-    // 5. Update meta
+    // 5. Build full client cache dir
+    consola.start('Start building cache dir from full client archives...')
+    if (isTestRun)
+      consola.info('Skip cache dir build in test run.')
+    else {
+      const cacheBuilt = await buildFromArchives()
+      if (!cacheBuilt) {
+        setOutput('noFullClientCache', true)
+        consola.info('No full client archives found to cache.')
+      } else
+        consola.success('Cache dir prepared from full client archives.')
+    }
+
+    // 6. Update meta
     consola.start('Start updating meta file...')
     if (isTestRun)
       consola.info('Skip meta file update in test run.')

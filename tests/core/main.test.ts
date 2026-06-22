@@ -4,6 +4,7 @@ import { getPatchDiff, removeRemovedClientFiles } from '../../src/core/patcher'
 import { downloadFullClient, downloadPatchFiles } from '../../src/core/downloader'
 import { validateClientFiles } from '../../src/core/validator'
 import { archiveClientFiles } from '../../src/core/archiver'
+import { buildFromArchives } from '../../src/core/cache'
 import type { ClientFilePair, PatchDiff } from '../../src/core/types'
 
 const makeClientFilePair = (path: string): ClientFilePair => {
@@ -30,9 +31,17 @@ const mockActionCore = vi.hoisted(() => ({
   setOutput: vi.fn(),
 }))
 
+const mockFs = vi.hoisted(() => ({
+  writeFile: vi.fn(),
+}))
+
 vi.mock('@actions/core', () => ({
   setOutput: mockActionCore.setOutput,
   setFailed: mockActionCore.setFailed,
+}))
+
+vi.mock('node:fs/promises', () => ({
+  writeFile: mockFs.writeFile,
 }))
 
 vi.mock('../../src/core/patcher', () => ({
@@ -53,24 +62,36 @@ vi.mock('../../src/core/archiver', () => ({
   archiveClientFiles: vi.fn(),
 }))
 
+vi.mock('../../src/core/cache', () => ({
+  buildFromArchives: vi.fn(),
+}))
+
 describe('main entrypoint argument validation', () => {
   let originalArgv: string[]
+  let originalNodeEnv: string | undefined
+  let originalVitestEnv: string | undefined
 
   beforeEach(() => {
     vi.resetModules()
     mockActionCore.setFailed.mockReset()
     originalArgv = [...process.argv]
+    originalNodeEnv = process.env.NODE_ENV
+    originalVitestEnv = process.env.VITEST
     vi.mocked(getPatchDiff).mockReset()
     vi.mocked(removeRemovedClientFiles).mockReset()
     vi.mocked(downloadFullClient).mockReset()
     vi.mocked(downloadPatchFiles).mockReset()
     vi.mocked(validateClientFiles).mockReset()
     vi.mocked(archiveClientFiles).mockReset()
+    vi.mocked(buildFromArchives).mockReset()
+    mockFs.writeFile.mockReset()
     vi.mocked(setOutput).mockReset()
   })
 
   afterEach(() => {
     process.argv = originalArgv
+    process.env.NODE_ENV = originalNodeEnv
+    process.env.VITEST = originalVitestEnv
   })
 
   it('should fail when mode is invalid', async () => {
@@ -218,6 +239,35 @@ describe('main entrypoint argument validation', () => {
       const removeOrder = vi.mocked(removeRemovedClientFiles).mock.invocationCallOrder[0]
       const validateOrder = vi.mocked(validateClientFiles).mock.invocationCallOrder[0]
       expect(removeOrder).toBeLessThan(validateOrder)
+    })
+  })
+
+  it('should set noFullClientCache output when cache builder finds no full archives', async () => {
+    process.env.NODE_ENV = 'production'
+    process.env.VITEST = 'false'
+    process.argv = [
+      'node',
+      'src/main.ts',
+      '--endpoint=http://example.com',
+      '--id=ABCDEFGHIJKLMNO',
+      '--version=3502',
+      '--mode=kart',
+    ]
+
+    vi.mocked(getPatchDiff).mockResolvedValue(makePatchDiff({
+      clientFiles: [
+        makeClientFilePair('Data/a.rho'),
+      ],
+      patchFiles: [],
+    }))
+    vi.mocked(validateClientFiles).mockResolvedValue([])
+    vi.mocked(buildFromArchives).mockResolvedValue(false)
+
+    await import('../../src/main.js')
+
+    await vi.waitFor(() => {
+      expect(buildFromArchives).toHaveBeenCalledTimes(1)
+      expect(setOutput).toHaveBeenCalledWith('noFullClientCache', true)
     })
   })
 })
