@@ -16,7 +16,7 @@
     "url": "git+ssh://git@github.com/brownsugar/popkart-client-archive.git"
   },
   "author": "Lay <contact@brownsugar.tw>",
-  "license": "MIT",
+  "license": "GPL-3.0-only",
   "bugs": {
     "url": "https://github.com/brownsugar/popkart-client-archive/issues"
   },
