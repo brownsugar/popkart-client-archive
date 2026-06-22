@@ -97,14 +97,14 @@ describe('main entrypoint argument validation', () => {
   it('should fail when mode is invalid', async () => {
     process.argv = [
       'node',
-      'src/main.ts',
+      'src/archive.ts',
       '--endpoint=http://example.com',
       '--id=ABCDEFGHIJKLMNO',
       '--version=123',
       '--mode=invalid',
     ]
 
-    await import('../../src/main.js')
+    await import('../../src/archive.js')
 
     await vi.waitFor(() => {
       expect(mockActionCore.setFailed).toHaveBeenCalledTimes(1)
@@ -117,14 +117,14 @@ describe('main entrypoint argument validation', () => {
   it('should fail when version is not a positive integer', async () => {
     process.argv = [
       'node',
-      'src/main.ts',
+      'src/archive.ts',
       '--endpoint=http://example.com',
       '--id=ABCDEFGHIJKLMNO',
       '--version=NaN',
       '--mode=kart',
     ]
 
-    await import('../../src/main.js')
+    await import('../../src/archive.js')
 
     await vi.waitFor(() => {
       expect(mockActionCore.setFailed).toHaveBeenCalledTimes(1)
@@ -137,7 +137,7 @@ describe('main entrypoint argument validation', () => {
   it('should download full client when validation marks all files invalid', async () => {
     process.argv = [
       'node',
-      'src/main.ts',
+      'src/archive.ts',
       '--endpoint=http://example.com',
       '--id=ABCDEFGHIJKLMNO',
       '--version=3502',
@@ -157,7 +157,7 @@ describe('main entrypoint argument validation', () => {
       .mockResolvedValueOnce(clientFiles)
       .mockResolvedValueOnce([])
 
-    await import('../../src/main.js')
+    await import('../../src/archive.js')
 
     await vi.waitFor(() => {
       expect(downloadFullClient).toHaveBeenCalledTimes(1)
@@ -172,7 +172,7 @@ describe('main entrypoint argument validation', () => {
   it('should set noClientCache output when no downloads and no removals are needed', async () => {
     process.argv = [
       'node',
-      'src/main.ts',
+      'src/archive.ts',
       '--endpoint=http://example.com',
       '--id=ABCDEFGHIJKLMNO',
       '--version=3502',
@@ -188,7 +188,7 @@ describe('main entrypoint argument validation', () => {
 
     vi.mocked(validateClientFiles).mockResolvedValue([])
 
-    await import('../../src/main.js')
+    await import('../../src/archive.js')
 
     await vi.waitFor(() => {
       expect(setOutput).toHaveBeenCalledWith('noClientCache', true)
@@ -201,7 +201,7 @@ describe('main entrypoint argument validation', () => {
   it('should remove removed files in step 2 before validation', async () => {
     process.argv = [
       'node',
-      'src/main.ts',
+      'src/archive.ts',
       '--endpoint=http://example.com',
       '--id=ABCDEFGHIJKLMNO',
       '--version=3502',
@@ -222,7 +222,7 @@ describe('main entrypoint argument validation', () => {
 
     vi.mocked(validateClientFiles).mockResolvedValue([])
 
-    await import('../../src/main.js')
+    await import('../../src/archive.js')
 
     await vi.waitFor(() => {
       expect(removeRemovedClientFiles).toHaveBeenCalledWith(['Data/removed.rho'])
@@ -239,7 +239,7 @@ describe('main entrypoint argument validation', () => {
     process.env.VITEST = 'false'
     process.argv = [
       'node',
-      'src/main.ts',
+      'src/archive.ts',
       '--endpoint=http://example.com',
       '--id=ABCDEFGHIJKLMNO',
       '--version=3502',
@@ -255,7 +255,7 @@ describe('main entrypoint argument validation', () => {
     vi.mocked(validateClientFiles).mockResolvedValue([])
     vi.mocked(buildFromArchives).mockResolvedValue(false)
 
-    await import('../../src/main.js')
+    await import('../../src/archive.js')
 
     await vi.waitFor(() => {
       expect(buildFromArchives).toHaveBeenCalledTimes(1)

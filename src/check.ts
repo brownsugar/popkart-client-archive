@@ -53,7 +53,7 @@ const run = async () => {
     }
 
     consola.success(`New version found, previous version: ${meta.version || 'N/A'}, latest version: ${version}.`)
-    consola.info(`Run \`pnpm start-main --endpoint=${endpoint} --id=${id} --version=${version} --mode=${mode}\` to start the archiving process.`)
+    consola.info(`Run \`pnpm archive --endpoint=${endpoint} --id=${id} --version=${version} --mode=${mode}\` to start the archiving process.`)
 
     setOutput('endpoint', endpoint)
     setOutput('id', id)

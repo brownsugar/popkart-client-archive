@@ -3,9 +3,9 @@
   "version": "1.4.0",
   "description": "A PopKart client archiver.",
   "scripts": {
-    "start-check": "ts-node src/check.ts",
+    "check": "ts-node src/check.ts",
     "restore-cache": "ts-node src/restore-cache.ts",
-    "start-main": "ts-node src/main.ts",
+    "archive": "ts-node src/archive.ts",
     "lint": "eslint . --fix",
     "lint:types": "tsc --noEmit",
     "test": "vitest run",
