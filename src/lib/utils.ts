@@ -67,6 +67,22 @@ export const getElapsedSeconds = (startTime: number) => {
   return ((performance.now() - startTime) / 1000).toFixed(2)
 }
 
+export const formatSize = (bytes: number, includeSign = false) => {
+  const gb = 1024 ** 3
+  const mb = 1024 ** 2
+  const absBytes = Math.abs(bytes)
+  const unit = absBytes >= gb ? 'GB' : 'MB'
+  const divisor = unit === 'GB' ? gb : mb
+  const value = absBytes / divisor
+  const valueText = value.toFixed(2).replace(/\.00$/, '')
+
+  if (!includeSign)
+    return `${valueText} ${unit}`
+
+  const sign = bytes >= 0 ? '+' : '-'
+  return `${sign}${valueText} ${unit}`
+}
+
 export const getArgs = (): CliArgsMap => {
   const argv = process.argv ?? []
   return argv

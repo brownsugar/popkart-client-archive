@@ -6,6 +6,7 @@ import {
   filetimeToUnix,
   generateMd5,
   getArgs,
+  formatSize,
   concurrentMap,
   withRetry,
   ungzip,
@@ -62,6 +63,25 @@ describe('utils', () => {
     it('should convert Windows FILETIME to Unix timestamp', () => {
       const timestamp = filetimeToUnix(31258792, -924275025)
       expect(timestamp).toBe(1781075672315) // 2026-06-10T15:14:32.315Z
+    })
+  })
+
+  describe('formatSize', () => {
+    it('should format zero bytes as 0 MB by default', () => {
+      expect(formatSize(0)).toBe('0 MB')
+    })
+
+    it('should format positive MB values without sign by default', () => {
+      expect(formatSize(1572864)).toBe('1.50 MB')
+    })
+
+    it('should format negative GB values without sign by default', () => {
+      expect(formatSize(-(2 * 1024 ** 3))).toBe('2 GB')
+    })
+
+    it('should show sign when includeSign is true', () => {
+      expect(formatSize(1572864, true)).toBe('+1.50 MB')
+      expect(formatSize(-(2 * 1024 ** 3), true)).toBe('-2 GB')
     })
   })
 

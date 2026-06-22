@@ -21,6 +21,10 @@ const makePatchDiff = (input: Partial<PatchDiff>): PatchDiff => {
     newFiles: [],
     changedFiles: [],
     removedFiles: [],
+    addedCount: 0,
+    updatedCount: 0,
+    removedCount: 0,
+    sizeDelta: 0,
     remoteBaseUrl: 'http://example.com',
     ...input,
   }

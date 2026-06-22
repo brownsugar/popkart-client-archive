@@ -6,7 +6,7 @@ import { downloadFullClient, downloadPatchFiles } from './core/downloader'
 import { validateClientFiles } from './core/validator'
 import { archiveClientFiles } from './core/archiver'
 import { buildFromArchives } from './core/cache'
-import { getArgs, getElapsedSeconds } from './lib/utils'
+import { formatSize, getArgs, getElapsedSeconds } from './lib/utils'
 import { parseCliArgs } from './core/cli'
 import { resolveClientDir, resolveMetaPath } from './lib/paths'
 import packageJson from '../package.json'
@@ -25,7 +25,12 @@ const run = async () => {
     consola.success('Patch info retrieved.\n', patchInfo)
 
     // 1. Get diff
-    const { clientFiles, patchFiles, removedFiles, remoteBaseUrl } = await getPatchDiff(patchInfo)
+    const { clientFiles, patchFiles, removedFiles, remoteBaseUrl, addedCount, updatedCount, removedCount, sizeDelta } = await getPatchDiff(patchInfo)
+
+    setOutput('addedCount', addedCount)
+    setOutput('updatedCount', updatedCount)
+    setOutput('removedCount', removedCount)
+    setOutput('sizeChanged', formatSize(sizeDelta))
 
     // 2. Download missing/changed files
     const downloadNeeded = patchFiles.length > 0

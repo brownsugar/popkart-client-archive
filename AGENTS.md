@@ -230,6 +230,7 @@ When modifying behavior in `src/core/*` or `src/lib/*`, update tests in `tests/c
 - Keep archive naming and chunk sequencing backward compatible.
 - Maintain concurrency/retry behavior unless there is a deliberate reliability/performance change with tests.
 - Prefer updating/adding tests for behavioral changes.
+- When introducing reusable formatting or helper logic for entrypoints/workflows, place it in `src/lib/utils.ts` and add/update tests in `tests/lib/utils.test.ts`.
 - Run at minimum:
   - `pnpm lint`
   - `pnpm lint:types`

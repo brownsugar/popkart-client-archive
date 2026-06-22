@@ -95,8 +95,27 @@ jobs:
     - name: Create release note
       if: ${{ steps.check.outputs.endpoint != '' }}
       run: |
-        echo "Release date: ${{ steps.date.outputs.time }}" > release-note.md
-        echo "Instructions: https://kinf.cc/Gz6ni" >> release-note.md
+        $addedCount = [int]"${{ steps.archive.outputs.addedCount || '0' }}"
+        $updatedCount = [int]"${{ steps.archive.outputs.updatedCount || '0' }}"
+        $removedCount = [int]"${{ steps.archive.outputs.removedCount || '0' }}"
+        $sizeChanged = "${{ steps.archive.outputs.sizeChanged || '+0 MB' }}"
+
+        $releaseNote = @(
+          "## Archive Info"
+          ""
+          "Release date: ${{ steps.date.outputs.time }}"
+          ""
+          "Instructions: https://kinf.cc/Gz6ni"
+          ""
+          "## Archive Summary"
+          ""
+          " - $addedCount files added"
+          " - $updatedCount files updated"
+          " - $removedCount files removed"
+          " - Client size $sizeChanged"
+        )
+
+        Set-Content -Path 'release-note.md' -Value $releaseNote -Encoding utf8
 
     - name: Create release
       if: ${{ steps.check.outputs.endpoint != '' }}

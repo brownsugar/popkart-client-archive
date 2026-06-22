@@ -73,24 +73,32 @@ export const getPatchDiff = async (patchInfo: KartPatchServerInfo): Promise<Patc
   const patchFiles: ClientFilePair[] = []
   const newFiles: string[] = []
   const changedFiles: string[] = []
+  let sizeDelta = 0
 
   for (const { localFile, remoteFile } of clientFiles) {
     const previousRemoteFile = previousManifestMap.get(remoteFile.path)
     if (!previousRemoteFile) {
       newFiles.push(remoteFile.path)
       patchFiles.push({ localFile, remoteFile })
+      sizeDelta += remoteFile.size
       continue
     }
 
     if (previousRemoteFile.getFileHash() !== remoteFile.getFileHash()) {
       changedFiles.push(remoteFile.path)
       patchFiles.push({ localFile, remoteFile })
+      sizeDelta += remoteFile.size - previousRemoteFile.size
     }
   }
 
   const removedFiles = previousRemoteFileList
     .filter(file => !currentManifestPathSet.has(file.path))
     .map(file => file.path)
+
+  for (const previousRemoteFile of previousRemoteFileList) {
+    if (!currentManifestPathSet.has(previousRemoteFile.path))
+      sizeDelta -= previousRemoteFile.size
+  }
 
   if (newFiles.length > 0)
     consola.info(`[Patcher] Found ${newFiles.length} new file(s)`)
@@ -109,6 +117,10 @@ export const getPatchDiff = async (patchInfo: KartPatchServerInfo): Promise<Patc
     newFiles,
     changedFiles,
     removedFiles,
+    addedCount: newFiles.length,
+    updatedCount: changedFiles.length,
+    removedCount: removedFiles.length,
+    sizeDelta,
     remoteBaseUrl,
   }
 }

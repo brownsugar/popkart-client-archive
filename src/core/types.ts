@@ -12,6 +12,10 @@ export interface PatchDiff {
   newFiles: string[]
   changedFiles: string[]
   removedFiles: string[]
+  addedCount: number
+  updatedCount: number
+  removedCount: number
+  sizeDelta: number
   remoteBaseUrl: string
 }
 
