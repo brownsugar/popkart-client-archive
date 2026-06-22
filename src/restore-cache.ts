@@ -9,6 +9,7 @@ import packageJson from '../package.json'
 
 const run = async () => {
   const t0 = performance.now()
+  let failed = false
 
   try {
     consola.box(`PopKart Client Archiver v${packageJson.version}`)
@@ -49,9 +50,11 @@ const run = async () => {
 
     consola.success('Cached full client restored to client directory.')
   } catch (e) {
+    failed = true
     setFailed(e instanceof Error ? e : String(e))
   } finally {
-    consola.success(`Run completed in ${getElapsedSeconds(t0)}s.`)
+    if (!failed)
+      consola.success(`Run completed in ${getElapsedSeconds(t0)}s.`)
   }
 }
 

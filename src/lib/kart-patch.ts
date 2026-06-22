@@ -33,19 +33,24 @@ export const connectKartSocket = (host: string, port: number): Promise<KartPatch
     socket.setTimeout(SOCKET_TIMEOUT_MS)
 
     socket.on('data', data => {
-      const reader = new BufferManager(data)
-      reader.move(0x0A)
+      try {
+        const reader = new BufferManager(data)
+        reader.move(0x0A)
 
-      const version = reader.nextShort()
-      const endpoint = reader.nextStringAuto()
-      socket?.destroy()
+        const version = reader.nextShort()
+        const endpoint = reader.nextStringAuto()
+        socket?.destroy()
 
-      resolve({
-        endpoint,
-        id: endpoint.match(/\/([A-Z]{15})$/)?.[1] || '',
-        version,
-        mode: 'kart',
-      })
+        resolve({
+          endpoint,
+          id: endpoint.match(/\/([A-Z]{15})$/)?.[1] || '',
+          version,
+          mode: 'kart',
+        })
+      } catch (e) {
+        socket?.destroy()
+        reject(e)
+      }
     })
 
     socket.on('timeout', () => {

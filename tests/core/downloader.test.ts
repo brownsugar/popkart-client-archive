@@ -27,7 +27,7 @@ vi.mock('undici', () => ({
       return
     }
 
-    const writer = factory()
+    const writer = factory({ statusCode: 200 })
     writer.end('mock file content')
     return new Promise(res => writer.on('finish', res))
   }),

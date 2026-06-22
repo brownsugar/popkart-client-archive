@@ -30,7 +30,7 @@ const downloadFile = async (url: string, destPath: string): Promise<void> => {
       url,
       { method: 'GET' },
       response => {
-        const statusCode = response?.statusCode ?? 200
+        const statusCode = response.statusCode
         if (statusCode < 200 || statusCode >= 300)
           throw new Error(`Download failed with status ${statusCode} for URL: ${url}`)
 

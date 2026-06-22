@@ -48,7 +48,8 @@ export const archiveClientFiles = async (
       if (currentSize >= ZIP_CHUNK_SIZE_BYTES || i === files.length - 1) {
         if (currentSize >= ZIP_CHUNK_SIZE_BYTES && i !== files.length - 1) {
           const lastFile = currentChunk.pop()!
-          chunks.push(currentChunk)
+          if (currentChunk.length > 0)
+            chunks.push(currentChunk)
           currentChunk = [lastFile]
           currentSize = remoteFile.size
         } else {
