@@ -1,0 +1,6 @@
+allowBuilds:
+  msw: true
+  unrs-resolver: true
+  utimes: true
+minimumReleaseAgeExclude:
+  - zip-lib@1.4.0

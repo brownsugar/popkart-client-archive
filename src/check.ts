@@ -1,50 +1,72 @@
 import { consola } from 'consola'
 import { setOutput, setFailed } from '@actions/core'
-import KartPatch from './lib/kart-patch'
+import { connectKartSocket, connectTCGServer } from './lib/kart-patch'
+import { getOptionalEnv } from './lib/env'
+import { getElapsedSeconds } from './lib/utils'
 import packageJson from '../package.json'
 import server from '../server.json'
 import meta from '../meta.json'
-import type { KartPatchServerInfo } from './lib/kart-patch'
+import type { KartPatchServerInfo } from './core/types'
+
+const getPatchInfo = async (): Promise<KartPatchServerInfo> => {
+  const tcgServerEndpoint = getOptionalEnv('TCG_SERVER_ENDPOINT')
+
+  try {
+    consola.info('Connecting to Kart socket...')
+    return await connectKartSocket(server.host, server.port)
+  } catch (socketError) {
+    if (!tcgServerEndpoint)
+      throw socketError
+
+    consola.warn('Kart socket connection failed. Falling back to TCG server...')
+    try {
+      return await connectTCGServer(tcgServerEndpoint)
+    } catch (tcgError) {
+      const socketErrorMsg = socketError instanceof Error ? socketError.message : String(socketError)
+      const tcgErrorMsg = tcgError instanceof Error ? tcgError.message : String(tcgError)
+      throw new Error(
+        `Failed to retrieve patch info. Kart socket error: ${socketErrorMsg}; TCG error: ${tcgErrorMsg}`,
+        {
+          cause: tcgError,
+        },
+      )
+    }
+  }
+}
 
 const run = async () => {
   const t0 = performance.now()
-  const getPerformanceResult = () => {
-    const t1 = performance.now()
-    return ((t1 - t0) / 1000).toFixed(2)
-  }
+  let failed = false
+
   try {
-    consola.box(`PopKart Client archiver v${packageJson.version}`)
+    consola.box(`PopKart Client Archiver v${packageJson.version}`)
 
-    consola.start('Loading patch info...')
-    const tcgServerEndpoint = process.env.PATCH_SERVER_ENDPOINT
-    const kartPatch = new KartPatch()
-
-    let patchInfo: KartPatchServerInfo = null
-    if (tcgServerEndpoint) {
-      consola.info('Connecting to TCG server...')
-      patchInfo = await kartPatch.connectTCGServer(tcgServerEndpoint)
-    } else {
-      consola.info('Connecting to patch socket...')
-      patchInfo = await kartPatch.connectSocket(server.host, server.port)
-    }
+    consola.start('Start loading patch info...')
+    const patchInfo = await getPatchInfo()
+    const { endpoint, id, version, mode } = patchInfo
     consola.success('Patch info loaded.\n', patchInfo)
 
-    consola.start('Checking version...')
-    if (meta.version && meta.version >= patchInfo.version) {
+    consola.start('Start checking version...')
+    if (meta.version && meta.version >= version) {
       consola.info(`Client is up-to-date, nothing to do. Current version: ${meta.version}.`)
       return
     }
-    consola.success(`New version found, previous version: ${meta.version}, latest version: ${patchInfo.version}.`)
-    consola.info(`Run \`pnpm start-main --endpoint=${patchInfo.endpoint} --id=${patchInfo.id} --version=${patchInfo.version} --mode=${patchInfo.mode}\` to start the archiving process.`)
-    setOutput('endpoint', patchInfo.endpoint)
-    setOutput('id', patchInfo.id)
-    setOutput('version', patchInfo.version)
-    setOutput('mode', patchInfo.mode)
+
+    consola.success(`New version found, previous version: ${meta.version || 'N/A'}, latest version: ${version}.`)
+    consola.info(`Run \`pnpm archive --endpoint=${endpoint} --id=${id} --version=${version} --mode=${mode}\` to start the archiving process.`)
+
+    setOutput('endpoint', endpoint)
+    setOutput('id', id)
+    setOutput('version', version)
+    setOutput('mode', mode)
   } catch (e) {
-    consola.log(`Done with an error occurred in ${getPerformanceResult()}s.`)
-    setFailed(e)
+    failed = true
+    consola.error(`Run failed after ${getElapsedSeconds(t0)}s.`)
+    setFailed(e instanceof Error ? e : String(e))
   } finally {
-    consola.success(`Done in ${getPerformanceResult()}s.`)
+    if (!failed)
+      consola.success(`Run completed in ${getElapsedSeconds(t0)}s.`)
   }
 }
+
 run()

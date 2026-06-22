@@ -3,9 +3,12 @@
   "version": "1.4.0",
   "description": "A PopKart client archiver.",
   "scripts": {
-    "start-check": "ts-node src/check.ts",
-    "start-main": "ts-node src/main.ts",
-    "lint": "eslint .",
+    "check": "ts-node src/check.ts",
+    "restore-cache": "ts-node src/restore-cache.ts",
+    "archive": "ts-node src/archive.ts",
+    "lint": "eslint . --fix",
+    "lint:types": "tsc --noEmit",
+    "test": "vitest run",
     "postversion": "git push && git push --tags"
   },
   "repository": {
@@ -13,26 +16,29 @@
     "url": "git+ssh://git@github.com/brownsugar/popkart-client-archive.git"
   },
   "author": "Lay <contact@brownsugar.tw>",
-  "license": "MIT",
+  "license": "GPL-3.0-only",
   "bugs": {
     "url": "https://github.com/brownsugar/popkart-client-archive/issues"
   },
   "homepage": "https://github.com/brownsugar/popkart-client-archive#readme",
-  "packageManager": "pnpm@9.9.0",
+  "packageManager": "pnpm@11.8.0",
   "devDependencies": {
-    "@brownsugar/eslint-config": "^3.2.1",
+    "@brownsugar/eslint-config": "^4.0.3",
     "@types/buffer-reader": "^0.1.3",
     "@types/fs-extra": "^11.0.4",
-    "eslint": "^9.9.1",
-    "ts-node": "^10.9.2"
+    "eslint": "^10.4.1",
+    "msw": "^2.14.6",
+    "ts-node": "^10.9.2",
+    "vitest": "^4.1.8",
+    "vitest-fetch-mock": "^0.4.5"
   },
   "dependencies": {
-    "@actions/core": "^1.10.1",
+    "@actions/core": "^2",
     "buffer-reader": "^0.1.0",
-    "consola": "^3.2.3",
-    "easydl": "^1.2.0",
-    "fs-extra": "^11.2.0",
+    "consola": "^3.4.2",
+    "fs-extra": "^11.3.5",
+    "undici": "^8.4.1",
     "utimes": "^5.2.1",
-    "zip-lib": "^1.0.4"
+    "zip-lib": "^1.4.0"
   }
 }
