@@ -30,7 +30,7 @@ const run = async () => {
     setOutput('addedCount', addedCount)
     setOutput('updatedCount', updatedCount)
     setOutput('removedCount', removedCount)
-    setOutput('sizeChanged', formatSize(sizeDelta))
+    setOutput('sizeChanged', formatSize(sizeDelta, true))
 
     // 2. Download missing/changed files
     const downloadNeeded = patchFiles.length > 0
