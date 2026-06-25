@@ -27,6 +27,17 @@ vi.mock('undici', () => ({
       return
     }
 
+    if (String(url).includes('/302')) {
+      factory({ statusCode: 302, headers: { location: 'http://mock/final.zip' } })
+      return
+    }
+
+    if (String(url).includes('/final.zip')) {
+      const writer = factory({ statusCode: 200 })
+      writer.end('mock redirected content')
+      return new Promise(res => writer.on('finish', res))
+    }
+
     const writer = factory({ statusCode: 200 })
     writer.end('mock file content')
     return new Promise(res => writer.on('finish', res))
@@ -111,6 +122,18 @@ describe('core/downloader', () => {
     ]
 
     await expect(downloadFullClient(clientDir)).rejects.toThrow('Download failed with status 404')
+  })
+
+  it('should follow 302 redirects for archive downloads', async () => {
+    const clientDir = resolveClientDir()
+    mockReleaseAssets = [
+      { name: 'PopKart_Client.zip', browser_download_url: 'http://mock/302.zip' },
+    ]
+
+    await expect(downloadFullClient(clientDir)).resolves.toBeUndefined()
+    expect(stream).toHaveBeenCalledWith('http://mock/302.zip', expect.objectContaining({ method: 'GET' }), expect.any(Function))
+    expect(stream).toHaveBeenCalledWith('http://mock/final.zip', expect.objectContaining({ method: 'GET' }), expect.any(Function))
+    expect(extract).toHaveBeenCalledTimes(1)
   })
 
   it('should run download and move flow for tcg mode patch files', async () => {

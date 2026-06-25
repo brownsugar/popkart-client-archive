@@ -13,6 +13,7 @@ const DOWNLOAD_RETRY_COUNT = 5
 const DOWNLOAD_CONCURRENCY = 10
 const EXTRACT_CONCURRENCY = 20
 const UPDATE_CONCURRENCY = 20
+const DOWNLOAD_REDIRECT_MAX_COUNT = 10
 const FULL_CLIENT_RELEASE_API_URL = 'https://api.github.com/repos/brownsugar/popkart-client-archive/releases/latest'
 
 interface GithubReleaseAsset {
@@ -24,13 +25,35 @@ interface GithubReleaseResponse {
   assets?: GithubReleaseAsset[]
 }
 
-const downloadFile = async (url: string, destPath: string): Promise<void> => {
+class RedirectDownloadError extends Error {
+  constructor(
+    public readonly statusCode: number,
+    public readonly location: string,
+  ) {
+    super(`Redirected with status ${statusCode} to ${location}`)
+  }
+}
+
+const downloadFile = async (url: string, destPath: string, redirectCount = 0): Promise<void> => {
+  if (redirectCount > DOWNLOAD_REDIRECT_MAX_COUNT)
+    throw new Error(`Download redirect limit exceeded (${DOWNLOAD_REDIRECT_MAX_COUNT}) for URL: ${url}`)
+
   try {
     await stream(
       url,
       { method: 'GET' },
       response => {
         const statusCode = response.statusCode
+
+        if (statusCode === 301 || statusCode === 302 || statusCode === 307 || statusCode === 308) {
+          const redirectLocation = response.headers.location
+          const location = Array.isArray(redirectLocation) ? redirectLocation[0] : redirectLocation
+          if (!location)
+            throw new Error(`Download redirected with status ${statusCode} but no Location header was provided for URL: ${url}`)
+
+          throw new RedirectDownloadError(statusCode, new URL(location, url).toString())
+        }
+
         if (statusCode < 200 || statusCode >= 300)
           throw new Error(`Download failed with status ${statusCode} for URL: ${url}`)
 
@@ -38,6 +61,9 @@ const downloadFile = async (url: string, destPath: string): Promise<void> => {
       },
     )
   } catch (e) {
+    if (e instanceof RedirectDownloadError)
+      return downloadFile(e.location, destPath, redirectCount + 1)
+
     await rm(destPath, { force: true })
     throw e
   }
