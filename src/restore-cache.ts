@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 import { consola } from 'consola'
 import { setFailed } from '@actions/core'
 import { extract } from 'zip-lib'
+import { downloadFullClient } from './core/downloader'
 import { getElapsedSeconds, removeDirectory } from './lib/utils'
 import { resolveClientDir } from './lib/paths'
 import packageJson from '../package.json'
@@ -22,7 +23,9 @@ const run = async () => {
     try {
       cacheEntries = await readdir(cacheDir)
     } catch {
-      consola.info('No cache directory found.')
+      consola.info('No cache directory found. Downloading full client...')
+      await downloadFullClient(clientDir)
+      consola.success('Full client downloaded and restored.')
       return
     }
 
@@ -31,8 +34,10 @@ const run = async () => {
       .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
 
     if (archives.length === 0) {
-      consola.info('No cached full client zips found.')
+      consola.info('No cached full client zips found. Downloading full client...')
       await removeDirectory(cacheDir)
+      await downloadFullClient(clientDir)
+      consola.success('Full client downloaded and restored.')
       return
     }
     consola.info(`Found ${archives.length} cached full client zip(s).`)
