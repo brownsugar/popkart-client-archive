@@ -25,16 +25,18 @@ const loadManifestByVersion = async (
   patchInfo: KartPatchServerInfo,
   version: number,
 ): Promise<{ remoteBaseUrl: string, remoteFileList: KartPatchFile[] | TcgPatchFile[] }> => {
+  const targetId = version === patchInfo.version ? patchInfo.id : meta.id
+  const endpoint = patchInfo.endpoint.replace(/\/[A-Z]{15}/, `/${targetId}`)
+
   if (patchInfo.mode === 'tcg') {
-    const targetId = version === patchInfo.version ? patchInfo.id : meta.id
-    const remoteBaseUrl = patchInfo.endpoint.replace(/\/[A-Z]{15}/, `/${targetId}`)
+    const remoteBaseUrl = endpoint
     return {
       remoteBaseUrl,
       remoteFileList: await loadTcgTxf(remoteBaseUrl),
     }
   }
 
-  const remoteBaseUrl = resolveUrl(version.toString(), patchInfo.endpoint)
+  const remoteBaseUrl = resolveUrl(version.toString(), endpoint)
   return {
     remoteBaseUrl,
     remoteFileList: await loadKartNfo2(remoteBaseUrl),

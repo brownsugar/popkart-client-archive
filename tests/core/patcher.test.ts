@@ -199,4 +199,48 @@ describe('core/patcher', () => {
     expect(result.patchFiles.map(file => file.remoteFile.path)).toEqual(['Data/a.rho', 'Data/b.rho'])
     expect(result.removedFiles).toEqual(['Data/c.rho'])
   })
+
+  it('getPatchDiff should diff kart manifests by patch id endpoint when endpoint includes id', async () => {
+    vi.mocked(loadKartNfo2).mockImplementation(async endpoint => {
+      if (endpoint === 'http://mock/kart/NEWPATCHABCDEFX/3502') {
+        return [
+          {
+            path: 'Data/a.rho',
+            crc: 111,
+            size: 100,
+            isTcgMode: () => false,
+            getFileHash: () => 111,
+          },
+        ] as unknown as Awaited<ReturnType<typeof loadKartNfo2>>
+      }
+
+      if (endpoint === 'http://mock/kart/OLDPATCHABCDEFQ/3501') {
+        return [
+          {
+            path: 'Data/a.rho',
+            crc: 100,
+            size: 100,
+            isTcgMode: () => false,
+            getFileHash: () => 100,
+          },
+        ] as unknown as Awaited<ReturnType<typeof loadKartNfo2>>
+      }
+
+      throw new Error(`Unexpected endpoint: ${endpoint}`)
+    })
+
+    const result = await getPatchDiff({
+      endpoint: 'http://mock/kart/NEWPATCHABCDEFX',
+      id: 'NEWPATCHABCDEFX',
+      version: 3502,
+      mode: 'kart',
+    })
+
+    expect(loadKartNfo2).toHaveBeenCalledWith('http://mock/kart/NEWPATCHABCDEFX/3502')
+    expect(loadKartNfo2).toHaveBeenCalledWith('http://mock/kart/OLDPATCHABCDEFQ/3501')
+    expect(loadTcgTxf).not.toHaveBeenCalled()
+    expect(result.remoteBaseUrl).toBe('http://mock/kart/NEWPATCHABCDEFX/3502')
+    expect(result.clientFiles.length).toBe(1)
+    expect(result.patchFiles.length).toBe(1)
+  })
 })
