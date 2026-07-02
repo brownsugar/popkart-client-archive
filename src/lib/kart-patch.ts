@@ -43,7 +43,7 @@ export const connectKartSocket = (host: string, port: number): Promise<KartPatch
 
         resolve({
           endpoint,
-          id: endpoint.match(/\/([A-Z]{15})$/)?.[1] || '',
+          id: endpoint.match(/\/([A-Z0-9]{15})$/)?.[1] || '',
           version,
           mode: 'kart',
         })
@@ -85,7 +85,7 @@ export const connectTCGServer = async (serverEndpoint: string): Promise<KartPatc
     throw new Error('[KartPatch][TCG] Invalid patch info from TCG server.')
 
   const endpoint = tcgPatchInfo.update_prefix
-  const id = tcgPatchInfo.update_prefix.match(/\/([A-Z]{15})$/)?.[1] || ''
+  const id = tcgPatchInfo.update_prefix.match(/\/([A-Z0-9]{15})$/)?.[1] || ''
   const version = Number(tcgPatchInfo.version.slice(1))
 
   return {

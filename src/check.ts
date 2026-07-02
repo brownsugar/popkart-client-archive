@@ -44,7 +44,7 @@ const run = async () => {
     consola.start('Start loading patch info...')
     const patchInfo = await getPatchInfo()
     const { endpoint, id: rawId, version, mode } = patchInfo
-    const id = rawId || endpoint.match(/\/([A-Z]{15})$/)?.[1] || ''
+    const id = rawId || endpoint.match(/\/([A-Z0-9]{15})$/)?.[1] || ''
 
     const missing = [
       !endpoint && 'endpoint',

@@ -43,8 +43,8 @@ describe('check entrypoint', () => {
 
   it('should use id from patch info when present', async () => {
     mockKartPatch.connectKartSocket.mockResolvedValue({
-      endpoint: 'http://example.com/ABCDEFGHIJKLMNO',
-      id: 'ABCDEFGHIJKLMNO',
+      endpoint: 'http://example.com/ABCDE1234FGH567',
+      id: 'ABCDE1234FGH567',
       version: 999999,
       mode: 'kart',
     })
@@ -52,13 +52,13 @@ describe('check entrypoint', () => {
     await import('../../src/check.js')
 
     await vi.waitFor(() => {
-      expect(mockActionCore.setOutput).toHaveBeenCalledWith('id', 'ABCDEFGHIJKLMNO')
+      expect(mockActionCore.setOutput).toHaveBeenCalledWith('id', 'ABCDE1234FGH567')
     })
   })
 
   it('should fall back to parsing id from endpoint when id is empty', async () => {
     mockKartPatch.connectKartSocket.mockResolvedValue({
-      endpoint: 'http://example.com/ABCDEFGHIJKLMNO',
+      endpoint: 'http://example.com/ABCDE1234FGH567',
       id: '',
       version: 999999,
       mode: 'kart',
@@ -67,11 +67,11 @@ describe('check entrypoint', () => {
     await import('../../src/check.js')
 
     await vi.waitFor(() => {
-      expect(mockActionCore.setOutput).toHaveBeenCalledWith('id', 'ABCDEFGHIJKLMNO')
+      expect(mockActionCore.setOutput).toHaveBeenCalledWith('id', 'ABCDE1234FGH567')
     })
   })
 
-  it('should output empty id when id is empty and endpoint has no 15-uppercase-letter tail', async () => {
+  it('should output empty id when id is empty and endpoint has no 15-char alphanumeric tail', async () => {
     mockKartPatch.connectKartSocket.mockResolvedValue({
       endpoint: 'http://example.com/no-id-here',
       id: '',
@@ -90,9 +90,9 @@ describe('check entrypoint', () => {
   })
 
   it.each([
-    { field: 'endpoint', patchInfo: { endpoint: '', id: 'ABCDEFGHIJKLMNO', version: 999999, mode: 'kart' } },
-    { field: 'version', patchInfo: { endpoint: 'http://example.com/ABCDEFGHIJKLMNO', id: 'ABCDEFGHIJKLMNO', version: 0, mode: 'kart' } },
-    { field: 'mode', patchInfo: { endpoint: 'http://example.com/ABCDEFGHIJKLMNO', id: 'ABCDEFGHIJKLMNO', version: 999999, mode: '' } },
+    { field: 'endpoint', patchInfo: { endpoint: '', id: 'ABCDE1234FGH567', version: 999999, mode: 'kart' } },
+    { field: 'version', patchInfo: { endpoint: 'http://example.com/ABCDE1234FGH567', id: 'ABCDE1234FGH567', version: 0, mode: 'kart' } },
+    { field: 'mode', patchInfo: { endpoint: 'http://example.com/ABCDE1234FGH567', id: 'ABCDE1234FGH567', version: 999999, mode: '' } },
   ] as const)('should fail when $field is missing', async ({ field, patchInfo }) => {
     mockKartPatch.connectKartSocket.mockResolvedValue(patchInfo)
 
