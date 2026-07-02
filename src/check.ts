@@ -43,7 +43,18 @@ const run = async () => {
 
     consola.start('Start loading patch info...')
     const patchInfo = await getPatchInfo()
-    const { endpoint, id, version, mode } = patchInfo
+    const { endpoint, id: rawId, version, mode } = patchInfo
+    const id = rawId || endpoint.match(/\/([A-Z]{15})$/)?.[1] || ''
+
+    const missing = [
+      !endpoint && 'endpoint',
+      !id && 'id',
+      !version && 'version',
+      !mode && 'mode',
+    ].filter(Boolean)
+    if (missing.length > 0)
+      throw new Error(`Patch info is incomplete. Missing fields: ${missing.join(', ')}`)
+
     consola.success('Patch info loaded.\n', patchInfo)
 
     consola.start('Start checking version...')
