@@ -26,7 +26,7 @@ const loadManifestByVersion = async (
   version: number,
 ): Promise<{ remoteBaseUrl: string, remoteFileList: KartPatchFile[] | TcgPatchFile[] }> => {
   const targetId = version === patchInfo.version ? patchInfo.id : meta.id
-  const endpoint = patchInfo.endpoint.replace(/\/[A-Z0-9]{15}/, `/${targetId}`)
+  const endpoint = patchInfo.endpoint.replace(/\/[A-Z0-9]{15}/i, `/${targetId}`)
 
   if (patchInfo.mode === 'tcg') {
     const remoteBaseUrl = endpoint
