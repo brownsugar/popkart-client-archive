@@ -29,7 +29,7 @@
     "eslint": "^10.5.0",
     "msw": "^2.14.6",
     "ts-node": "^10.9.2",
-    "vitest": "^4.1.9",
+    "vitest": "^5.1.0",
     "vitest-fetch-mock": "^0.4.5"
   },
   "dependencies": {
