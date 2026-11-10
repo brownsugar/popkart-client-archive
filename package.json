@@ -37,7 +37,7 @@
     "buffer-reader": "^0.1.0",
     "consola": "^3.4.2",
     "fs-extra": "^11.3.5",
-    "undici": "^8.5.0",
+    "undici": "^8.12.2",
     "utimes": "^5.2.1",
     "zip-lib": "^1.4.0"
   }
