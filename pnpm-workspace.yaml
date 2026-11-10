@@ -5,6 +5,7 @@ allowBuilds:
 minimumReleaseAgeExclude:
   - zip-lib@1.4.0
   - '@brownsugar/eslint-config@4.0.4'
+  - '@typescript-eslint/*'
   - '@typescript-eslint/eslint-plugin@8.62.0'
   - '@typescript-eslint/parser@8.62.0'
   - '@typescript-eslint/project-service@8.62.0'
@@ -16,4 +17,5 @@ minimumReleaseAgeExclude:
   - '@typescript-eslint/utils@8.62.0'
   - '@typescript-eslint/visitor-keys@8.62.0'
   - globals@17.7.0
+  - '@rolldown/pluginutils@1.1.0'
   - typescript-eslint@8.62.0
